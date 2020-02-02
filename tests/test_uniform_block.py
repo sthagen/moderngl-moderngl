@@ -9,6 +9,8 @@ class TestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ctx = get_context()
+        if 'llvmpipe' in cls.ctx.info['GL_RENDERER']:
+            raise unittest.SkipTest('Temp disable for llvmpipe')
 
         cls.prog = cls.ctx.program(
             vertex_shader='''

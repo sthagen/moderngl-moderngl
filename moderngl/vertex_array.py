@@ -170,7 +170,7 @@ class VertexArray:
         else:
             self.mglo.render_indirect(buffer.mglo, mode, count, first)
 
-    def transform(self, buffer, mode=None, vertices=-1, *, first=0, instances=-1) -> None:
+    def transform(self, buffer, mode=None, vertices=-1, *, first=0, instances=-1, buffer_offset=0) -> None:
         '''
             Transform vertices.
             Stores the output in a single buffer.
@@ -185,6 +185,7 @@ class VertexArray:
             Keyword Args:
                 first (int): The index of the first vertex to start with.
                 instances (int): The number of instances.
+                buffer_offset (int): Byte offset for the output buffer
         '''
 
         if mode is None:
@@ -192,9 +193,9 @@ class VertexArray:
 
         if self.scope:
             with self.scope:
-                self.mglo.transform(buffer.mglo, mode, vertices, first, instances)
+                self.mglo.transform(buffer.mglo, mode, vertices, first, instances, buffer_offset)
         else:
-            self.mglo.transform(buffer.mglo, mode, vertices, first, instances)
+            self.mglo.transform(buffer.mglo, mode, vertices, first, instances, buffer_offset)
 
     def bind(self, attribute, cls, buffer, fmt, *, offset=0, stride=0, divisor=0, normalize=False) -> None:
         '''

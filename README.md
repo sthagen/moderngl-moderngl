@@ -8,6 +8,9 @@
 
 [![pypi](https://badge.fury.io/py/moderngl.svg)](https://pypi.python.org/pypi/moderngl) <img src="https://raw.githubusercontent.com/moderngl/moderngl/master/.github/python-versions.svg?sanitize=true"> [![rtd](https://readthedocs.org/projects/moderngl/badge/?version=latest)](https://moderngl.readthedocs.io)
 
+ModernGL is a python wrapper over OpenGL 3.3+ core that simplifies the creation of simple graphics applications like scientific simulations, games or user interfaces. Usually, acquiring in-depth knowledge of OpenGL requires a steep learning curve. In contrast, ModernGL is easy to learn and use, moreover it is capable of rendering with high performance and quality, with less code written. The majority of the moderngl
+code base is also written in C++ for high performance.
+
 ```sh
 pip install moderngl
 ```
@@ -95,7 +98,7 @@ python setup.py build_ext --inplace
 
 ### Is ModernGL faster than PyOpenGL?
 
-In some cases **yes**, the core functions of ModernGL are written in C++,
+In many cases **yes**, the core functions of ModernGL are written in C++,
 OpenGL functions are called in quick succession so these calls together
 count as a single python function call.
 
@@ -108,7 +111,8 @@ Shaders require **OpenGL 4.0** and **OpenGL 4.3**
 
 OpenGL 3.3 came out in February 2010. With **up to date drivers** you will
 be able to use the most of the ModernGL functions, even on integrated 
-graphics cards. _(No, Compute Shaders won't work)_
+graphics cards. _(Compute Shaders will likely not work
+depending on how old your PC is.)_
 
 ### Where can I use ModernGL?
 
@@ -196,6 +200,7 @@ Code is tested with [pep8], [flake8], [prospector] and [pylint]
 - [Joshua Reibert](https://github.com/joshua-r)
 - [Einar Forselv](https://github.com/einarf)
 - [Jonathan Hartley](https://github.com/tartley)
+- [yoyonel](https://github.com/yoyonel)
 
 and [many others](https://github.com/cprogrammer1994/ModernGL/graphs/contributors)
 

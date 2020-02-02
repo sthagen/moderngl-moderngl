@@ -16,8 +16,8 @@ class TestCase(unittest.TestCase):
         self.assertEqual(rbo.depth, False)
 
     def test_multisample_renderbuffer(self):
-        # if self.ctx.max_samples < 2:
-        #     self.skipTest('multisampling is not supported')
+        if self.ctx.max_samples < 2:
+            self.skipTest('multisampling is not supported')
 
         rbo = self.ctx.renderbuffer((4, 4), samples=2)
         self.assertTupleEqual(rbo.size, (4, 4))
@@ -31,8 +31,8 @@ class TestCase(unittest.TestCase):
         self.assertEqual(rbo.depth, True)
 
     def test_multisample_depth_renderbuffer(self):
-        # if self.ctx.max_samples < 2:
-        #     self.skipTest('multisampling is not supported')
+        if self.ctx.max_samples < 2:
+            self.skipTest('multisampling is not supported')
 
         rbo = self.ctx.depth_renderbuffer((4, 4), samples=2)
         self.assertTupleEqual(rbo.size, (4, 4))
@@ -40,8 +40,8 @@ class TestCase(unittest.TestCase):
         self.assertEqual(rbo.depth, True)
 
     def test_renderbuffer_invalid_samples(self):
-        # if self.ctx.max_samples < 2:
-        #     self.skipTest('multisampling is not supported')
+        if self.ctx.max_samples < 2:
+            self.skipTest('multisampling is not supported')
 
         with self.assertRaisesRegex(Exception, 'sample'):
             self.ctx.renderbuffer((4, 4), samples=3)

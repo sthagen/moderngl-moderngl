@@ -55,17 +55,16 @@ class Framebuffer:
             the defined scissor box will be discarded. This
             applies to rendered geometry or :py:meth:`Framebuffer.clear`.
 
-            When this value is equal to the frambuffer size
-            scissor testing is disabled.
-
-            Setting the scissor attribute to ``None`` disables
-            the scissor testing. It's a shortcut for setting
-            the scissor values back to the framebuffer size.
+            Setting is value enables scissor testing in the framebuffer.
+            Setting the scissor to ``None`` disables scissor testing
+            and reverts the scissor box to match the framebuffer size.
 
             Example::
 
-                >>> fbo.scissor = 100, 100, 200, 100
-                >>> fbo.scissor = None
+                # Enable scissor testing
+                >>> ctx.scissor = 100, 100, 200, 100
+                # Disable scissor testing
+                >>> ctx.scissor = None
         '''
 
         return self.mglo.scissor
@@ -79,8 +78,24 @@ class Framebuffer:
 
     @property
     def color_mask(self) -> Tuple[bool, bool, bool, bool]:
-        '''
-            tuple: The color mask of the framebuffer.
+        '''tuple: The color mask of the framebuffer.
+
+        Color masking controls what components in color attachments will be
+        affected by fragment write operations.
+        This includes rendering geometry and clearing the framebuffer.
+
+        Default value: ``(True, True, True, True)``.
+
+        Examples::
+
+            # Block writing to all color components (rgba) in color attachments
+            fbo.color_mask = False, False, False, False
+
+            # Re-enable writing to color attachments
+            fbo.color_mask = True, True, True, True
+
+            # Block fragment writes to alpha channel
+            fbo.color_mask = True, True, True, False
         '''
 
         return self.mglo.color_mask
@@ -91,8 +106,15 @@ class Framebuffer:
 
     @property
     def depth_mask(self) -> bool:
-        '''
-            tuple: The depth mask of the framebuffer.
+        '''bool: The depth mask of the framebuffer.
+
+        Depth mask enables or disables write operations to the depth buffer.
+        This also applies when clearing the framebuffer.
+        If depth testing is enabled fragments will still be culled, but
+        the depth buffer will not be updated with new values. This is
+        a very useful tool in many rendering techniques.
+
+        Default value: ``True``
         '''
 
         return self.mglo.depth_mask
@@ -105,6 +127,9 @@ class Framebuffer:
     def width(self) -> int:
         '''
             int: The width of the framebuffer.
+
+            Framebuffers created by a window will only report its initial size.
+            It's better get size information from the window itself.
         '''
 
         return self._size[0]
@@ -113,6 +138,9 @@ class Framebuffer:
     def height(self) -> int:
         '''
             int: The height of the framebuffer.
+
+            Framebuffers created by a window will only report its initial size.
+            It's better get size information from the window itself.
         '''
 
         return self._size[1]
@@ -121,6 +149,9 @@ class Framebuffer:
     def size(self) -> tuple:
         '''
             tuple: The size of the framebuffer.
+
+            Framebuffers created by a window will only report its initial size.
+            It's better get size information from the window itself.
         '''
 
         return self._size
@@ -170,10 +201,14 @@ class Framebuffer:
         '''
             Clear the framebuffer.
 
-            If the `viewport` is not ``None`` then scissor test
-            will be used to clear the given viewport.
-            If `viewport` is not `None` it will take precedence
-            over any scissoring set in the framebuffer.
+            If a `viewport` passed in, a scissor test will be used to clear the given viewport.
+            This viewport take prescense over the framebuffers :py:attr:`~moderngl.Framebuffer.scissor`.
+            Clearing can still be done with scissor if no viewport is passed in.
+
+            This method also respects the
+            :py:attr:`~moderngl.Framebuffer.color_mask` and
+            :py:attr:`~moderngl.Framebuffer.depth_mask`. It can for example be used to only clear
+            the depth or color buffer or specific components in the color buffer.
 
             If the `viewport` is a 2-tuple it will clear the
             ``(0, 0, width, height)`` where ``(width, height)`` is the 2-tuple.
@@ -202,7 +237,7 @@ class Framebuffer:
 
     def use(self) -> None:
         '''
-            Bind the framebuffer. Set the target for the :py:meth:`VertexArray.render`.
+            Bind the framebuffer. Sets the target for rendering commands.
         '''
 
         self.ctx.fbo = self

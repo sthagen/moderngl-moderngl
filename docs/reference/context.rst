@@ -47,6 +47,8 @@ Methods
 .. automethod:: Context.copy_buffer(dst, src, size=-1, read_offset=0, write_offset=0)
 .. automethod:: Context.copy_framebuffer(dst, src)
 .. automethod:: Context.detect_framebuffer(glo=None) -> Framebuffer
+.. automethod:: Context.__enter__()
+.. automethod:: Context.__exit__(exc_type, exc_val, exc_tb)
 
 Attributes
 ----------
@@ -76,16 +78,47 @@ Attributes
 .. autoattribute:: Context.mglo
 .. autoattribute:: Context.extra
 
-OpenGL enums
-------------
+Context Flags
+-------------
 
+Context flags are used to enable or disable states in the context.
+These are not the same enum values as in opengl, but are rather
+bit flags so we can ``or`` them together setting multiple states
+in a simple way.
+
+These values are available in the ``Context`` object and in the
+``moderngl`` module when you don't have access to the context.
+
+.. code:: python
+
+    import moderngl
+
+    # From moderngl
+    ctx.enable_only(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
+
+    # From context
+    ctx.enable_only(ctx.DEPTH_TEST | ctx.CULL_FACE)
+
+.. autoattribute:: Context.NOTHING
 .. autoattribute:: Context.BLEND
 .. autoattribute:: Context.DEPTH_TEST
 .. autoattribute:: Context.CULL_FACE
+.. autoattribute:: Context.RASTERIZER_DISCARD
+.. autoattribute:: Context.PROGRAM_POINT_SIZE
+
+Blend Functions
+---------------
+
+Blend functions are used with :py:attr:`Context.blend_func`
+to control blending operations.
+
+.. code::
+
+    # Default value
+    ctx.blend_func = ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA
 
 .. autoattribute:: Context.ZERO
 .. autoattribute:: Context.ONE
-
 .. autoattribute:: Context.SRC_COLOR
 .. autoattribute:: Context.ONE_MINUS_SRC_COLOR
 .. autoattribute:: Context.SRC_ALPHA
@@ -95,11 +128,26 @@ OpenGL enums
 .. autoattribute:: Context.DST_COLOR
 .. autoattribute:: Context.ONE_MINUS_DST_COLOR
 
+Blend Function Shortcuts
+------------------------
+
+.. autoattribute:: Context.DEFAULT_BLENDING
+.. autoattribute:: Context.ADDITIVE_BLENDING
+.. autoattribute:: Context.PREMULTIPLIED_ALPHA
+
+Blend Equations
+---------------
+
+Used with :py:attr:`Context.blend_equation`.
+
 .. autoattribute:: Context.FUNC_ADD
 .. autoattribute:: Context.FUNC_SUBTRACT
 .. autoattribute:: Context.FUNC_REVERSE_SUBTRACT
 .. autoattribute:: Context.MIN
 .. autoattribute:: Context.MAX
+
+Other Enums
+-----------
 
 .. autoattribute:: Context.FIRST_VERTEX_CONVENTION
 .. autoattribute:: Context.LAST_VERTEX_CONVENTION

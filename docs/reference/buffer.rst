@@ -26,7 +26,7 @@ Methods
 .. automethod:: Buffer.clear(size=-1, offset=0, chunk=None)
 .. automethod:: Buffer.bind_to_uniform_block(binding=0, offset=0, size=-1)
 .. automethod:: Buffer.bind_to_storage_buffer(binding=0, offset=0, size=-1)
-.. automethod:: Buffer.orphan()
+.. automethod:: Buffer.orphan(size=-1)
 .. automethod:: Buffer.release()
 
 

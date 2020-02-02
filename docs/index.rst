@@ -7,8 +7,8 @@ ModernGL is a high performance rendering module for Python.
     :maxdepth: 2
 
     installation.rst
-    reference/index.rst
     the_guide/index.rst
+    reference/index.rst
     misc/index.rst
 
 Indices and tables

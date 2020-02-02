@@ -25,20 +25,30 @@ except ImportError:
     pass
 
 __all__ = ['Context', 'create_context', 'create_standalone_context',
-           'NOTHING', 'BLEND', 'DEPTH_TEST', 'CULL_FACE', 'RASTERIZER_DISCARD',
+           'NOTHING', 'BLEND', 'DEPTH_TEST', 'CULL_FACE', 'RASTERIZER_DISCARD', 'PROGRAM_POINT_SIZE',
            'ZERO', 'ONE', 'SRC_COLOR', 'ONE_MINUS_SRC_COLOR', 'SRC_ALPHA', 'ONE_MINUS_SRC_ALPHA',
            'DST_ALPHA', 'ONE_MINUS_DST_ALPHA', 'DST_COLOR', 'ONE_MINUS_DST_COLOR',
            'FUNC_ADD', 'FUNC_SUBTRACT', 'FUNC_REVERSE_SUBTRACT', 'MIN', 'MAX',
-           'DEFAULT_BLENDING', 'PREMULTIPLIED_ALPHA', 'FIRST_VERTEX_CONVENTION',
-           'LAST_VERTEX_CONVENTION']
+           'DEFAULT_BLENDING', 'ADDITIVE_BLENDING', 'PREMULTIPLIED_ALPHA',
+           'FIRST_VERTEX_CONVENTION', 'LAST_VERTEX_CONVENTION']
 
+# Context Flags
+# Context Flags
+#: Represents no states. Can be used with :py:meth:`Context.enable_only` to disable all states.
 NOTHING = 0
+#: Enable/disable blending
 BLEND = 1
+#: Enable/disable depth testing
 DEPTH_TEST = 2
+#: Enable/disable face culling
 CULL_FACE = 4
+#: Enable/disable rasterization
 RASTERIZER_DISCARD = 8
+#: When enabled we can write to ``gl_PointSize`` in the vertex shader to specify the point size.
+#: When disabled :py:attr:`Context.point_size` is used.
+PROGRAM_POINT_SIZE = 16
 
-
+# Blend functions
 ZERO = 0x0000
 ONE = 0x0001
 SRC_COLOR = 0x0300
@@ -51,17 +61,30 @@ DST_COLOR = 0x0306
 ONE_MINUS_DST_COLOR = 0x0307
 
 # Blend equations
+#: source + destination
 FUNC_ADD = 0x8006
+#: source - destination
 FUNC_SUBTRACT = 0x800A
+#: destination - source
 FUNC_REVERSE_SUBTRACT = 0x800B
+#: Minimum of source and destination
 MIN = 0x8007
+#: Maximum of source and destination
 MAX = 0x8008
 
-FIRST_VERTEX_CONVENTION = 0x8E4D
-LAST_VERTEX_CONVENTION = 0x8E4E
-
+#: Shotcut for the default blending ``SRC_ALPHA, ONE_MINUS_SRC_ALPHA``
 DEFAULT_BLENDING = (SRC_ALPHA, ONE_MINUS_SRC_ALPHA)
+#: Shotcut for additive blending ``ONE, ONE``
+ADDITIVE_BLENDING = (ONE, ONE)
+#: Shotcut for blend mode when using premultiplied alpha ``SRC_ALPHA, ONE``
 PREMULTIPLIED_ALPHA = (SRC_ALPHA, ONE)
+
+#: Specifies the first vertex should be used as the source of data for flat shaded varyings.
+#: Used with :py:attr:`Context.provoking_vertex`.
+FIRST_VERTEX_CONVENTION = 0x8E4D
+#: Specifies the last vertex should be used as the source of data for flat shaded varyings.
+#: Used with :py:attr:`Context.provoking_vertex`.
+LAST_VERTEX_CONVENTION = 0x8E4E
 
 
 class Context:
@@ -69,14 +92,24 @@ class Context:
         Class exposing OpenGL features.
         ModernGL objects can be created from this class.
     '''
-
+    # Context Flags
+    #: Represents no states. Can be used with :py:meth:`Context.enable_only` to disable all states.
+    NOTHING = 0
+    #: Enable/disable blending
     BLEND = 1
+    #: Enable/disable depth testing
     DEPTH_TEST = 2
+    #: Enable/disable face culling
     CULL_FACE = 4
+    #: Enable/disable rasterization
+    RASTERIZER_DISCARD = 8
+    #: When enabled we can write to ``gl_PointSize`` in the vertex shader to specify the point size.
+    #: When disabled :py:attr:`Context.point_size` is used.
+    PROGRAM_POINT_SIZE = 16
 
+    # Blend functions
     ZERO = 0x0000
     ONE = 0x0001
-
     SRC_COLOR = 0x0300
     ONE_MINUS_SRC_COLOR = 0x0301
     SRC_ALPHA = 0x0302
@@ -86,14 +119,33 @@ class Context:
     DST_COLOR = 0x0306
     ONE_MINUS_DST_COLOR = 0x0307
 
+    #: Shotcut for the default blending ``SRC_ALPHA, ONE_MINUS_SRC_ALPHA``
+    DEFAULT_BLENDING = (SRC_ALPHA, ONE_MINUS_SRC_ALPHA)
+    #: Shotcut for additive blending ``ONE, ONE``
+    ADDITIVE_BLENDING = (ONE, ONE)
+    #: Shotcut for blend mode when using premultiplied alpha ``SRC_ALPHA, ONE``
+    PREMULTIPLIED_ALPHA = (SRC_ALPHA, ONE)
+
+
     # Blend equations
+    #: source + destination
     FUNC_ADD = 0x8006
+    #: source - destination
     FUNC_SUBTRACT = 0x800A
+    #: destination - source
     FUNC_REVERSE_SUBTRACT = 0x800B
+    #: Minimum of source and destination
     MIN = 0x8007
+    #: Maximum of source and destination
     MAX = 0x8008
 
+    # Provoking vertex
+
+    #: Specifies the first vertex should be used as the source of data for flat shaded varyings.
+    #: Used with :py:attr:`Context.provoking_vertex`.
     FIRST_VERTEX_CONVENTION = 0x8E4D
+    #: Specifies the last vertex should be used as the source of data for flat shaded varyings.
+    #: Used with :py:attr:`Context.provoking_vertex`.
     LAST_VERTEX_CONVENTION = 0x8E4E
 
     __slots__ = ['mglo', '_screen', '_info', 'version_code', 'fbo', 'extra']
@@ -110,7 +162,7 @@ class Context:
         raise TypeError()
 
     def __repr__(self):
-        return '<Context>'
+        return '<Context {} version_code={}>'.format(id(self), self.version_code)
 
     def __eq__(self, other):
         return type(self) is type(other) and self.mglo is other.mglo
@@ -204,15 +256,19 @@ class Context:
     def blend_equation(self):
         '''
             tuple: Set the blend equation (write only).
+
+            Blend equations specify how source and destination colors are combined
+            in blending operations. By default ``FUNC_ADD`` is used.
+
             Blend equation can be set for rgb and alpha separately if needed.
 
             Supported functions are::
 
-                moderngl.FUNC_ADD
-                moderngl.FUNC_SUBTRACT
-                moderngl.FUNC_REVERSE_SUBTRACT
-                moderngl.MIN
-                moderngl.MAX
+                moderngl.FUNC_ADD               # source + destination
+                moderngl.FUNC_SUBTRACT          # source - destination
+                moderngl.FUNC_REVERSE_SUBTRACT  # destination - source
+                moderngl.MIN                    # Minimum of source and destination
+                moderngl.MAX                    # Maximum of source and destination
 
             Example::
 
@@ -254,12 +310,23 @@ class Context:
 
     @property
     def provoking_vertex(self):
-        '''
-            This property is write only
+        '''int: Specifies the vertex to be used as the source of data for flat shaded varyings.
+
+            Flatshading a vertex shader varying output (ie. ``flat out vec3 pos``) means to assign
+            all vetices of the primitive the same value for that output. The vertex from which
+            these values is derived is known as the provoking vertex.
+
+            It can be configured to be the first or the last vertex.
+
+            This property is write only.
 
             Example::
 
+                # Use first vertex
                 ctx.provoking_vertex = moderngl.FIRST_VERTEX_CONVENTION
+
+                # Use last vertex
+                ctx.provoking_vertex = moderngl.LAST_VERTEX_CONVENTION 
         '''
         raise NotImplementedError()
 
@@ -298,16 +365,15 @@ class Context:
             the defined scissor box will be discarded. This
             applies to rendered geometry or :py:meth:`Context.clear`.
 
-            When this value is equal to the frambuffer size
-            scissor testing is disabled.
-
-            Setting the scissor attribute to ``None`` disables
-            the scissor testing. It's a shortcut for setting
-            the scissor values back to the framebuffer size.
+            Setting is value enables scissor testing in the framebuffer.
+            Setting the scissor to ``None`` disables scissor testing
+            and reverts the scissor box to match the framebuffer size.
 
             Example::
 
+                # Enable scissor testing
                 >>> ctx.scissor = 100, 100, 200, 100
+                # Disable scissor testing
                 >>> ctx.scissor = None
 
             If no framebuffer is bound ``(0, 0, 0, 0)`` will be returned.
@@ -524,12 +590,16 @@ class Context:
     def clear(self, red=0.0, green=0.0, blue=0.0, alpha=0.0, depth=1.0, *,
               viewport=None, color=None) -> None:
         '''
-            Clear the bound framebuffer. By default clears the :py:data:`screen`.
+            Clear the bound framebuffer.
 
-            If the `viewport` is not ``None`` then scissor test
-            will be used to clear the given viewport.
-            If `viewport` is not `None` it will take precedence
-            over any scissoring set in the framebuffer.
+            If a `viewport` passed in, a scissor test will be used to clear the given viewport.
+            This viewport take prescense over the framebuffers :py:attr:`~moderngl.Framebuffer.scissor`.
+            Clearing can still be done with scissor if no viewport is passed in.
+
+            This method also respects the
+            :py:attr:`~moderngl.Framebuffer.color_mask` and
+            :py:attr:`~moderngl.Framebuffer.depth_mask`. It can for example be used to only clear
+            the depth or color buffer or specific components in the color buffer.
 
             If the `viewport` is a 2-tuple it will clear the
             ``(0, 0, width, height)`` where ``(width, height)`` is the 2-tuple.
@@ -554,7 +624,12 @@ class Context:
 
     def enable_only(self, flags) -> None:
         '''
-            Clears all existing flags applying new ones
+            Clears all existing flags applying new ones.
+
+            Note that the enum values defined in moderngl
+            are not the same as the ones in opengl.
+            These are defined as bit flags so we can logical
+            `or` them together.
 
             Available flags:
 
@@ -563,6 +638,7 @@ class Context:
             - :py:data:`moderngl.DEPTH_TEST`
             - :py:data:`moderngl.CULL_FACE`
             - :py:data:`moderngl.RASTERIZER_DISCARD`
+            - :py:data:`moderngl.PROGRAM_POINT_SIZE`
 
             Examples::
 
@@ -581,6 +657,11 @@ class Context:
     def enable(self, flags) -> None:
         '''
             Enable flags.
+
+            Note that the enum values defined in moderngl
+            are not the same as the ones in opengl.
+            These are defined as bit flags so we can logical
+            `or` them together.
 
             For valid flags, please see :py:meth:`enable_only`.
 
@@ -840,9 +921,28 @@ class Context:
         return res
 
     def vertex_array(self, *args, **kwargs) -> 'VertexArray':
+        '''
+            Create a :py:class:`VertexArray` object.
+
+            This method also supports arguments for :py:meth:`Context.simple_vertex_array`.
+
+            Args:
+                program (Program): The program used when rendering.
+                content (list): A list of (buffer, format, attributes).
+                                See :ref:`buffer-format-label`.
+                index_buffer (Buffer): An index buffer.
+
+            Keyword Args:
+                index_element_size (int): byte size of each index element, 1, 2 or 4.
+                skip_errors (bool): Ignore skip_errors varyings.
+
+            Returns:
+                :py:class:`VertexArray` object
+        '''
         if len(args) > 2 and type(args[1]) is Buffer:
             return self.simple_vertex_array(*args, **kwargs)
         return self._vertex_array(*args, **kwargs)
+
 
     def _vertex_array(self, program, content,
                       index_buffer=None, index_element_size=4, *,
@@ -884,6 +984,10 @@ class Context:
                             index_buffer=None, index_element_size=4) -> 'VertexArray':
         '''
             Create a :py:class:`VertexArray` object.
+
+            .. Warning:: This method is deprecated and may be removed in the future.
+                         Use :py:meth:`Context.vertex_array` instead. It also supports
+                         the argument format this method describes.
 
             Args:
                 program (Program): The program used when rendering.
@@ -1024,9 +1128,8 @@ class Context:
 
     def simple_framebuffer(self, size, components=4, *, samples=0, dtype='f1') -> 'Framebuffer':
         '''
-            A :py:class:`Framebuffer` is a collection of buffers that can be
-            used as the destination for rendering. The buffers for Framebuffer
-            objects reference images from either Textures or Renderbuffers.
+            Creates a :py:class:`Framebuffer` with a single color attachment
+            and depth buffer using :py:class:`moderngl.Renderbuffer` attachments.
 
             Args:
                 size (tuple): The width and height of the renderbuffer.
@@ -1248,15 +1351,45 @@ class Context:
         if version_code < 330:
             warnings.warn('The window should support OpenGL 3.3+ (version_code=%d)' % version_code)
 
+    def __enter__(self):
+        """Enters the context.
+        
+        This should ideally be used with the ``with`` statement::
+
+            with other_context as ctx:
+                # Do something in this context
+
+        When exiting the context the previously bound context is activated again.
+
+        .. Warning:: Context switching can be risky unless you know what you are doing.
+                     ModernGL objects are not aware of what context is currently active.
+                     Use with care.
+        """
+        self.mglo.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context.
+
+        See :py:meth:`Context.__enter__`
+        """
+        self.mglo.__exit__(exc_type, exc_val, exc_tb)
+
     def release(self) -> None:
         '''
             Release the ModernGL context.
+
+            If the context is not standalone the standard
+            backends in ``glcontext`` will not do anything
+            because the context was not created by moderngl.
+
+            Standalone contexts can normally be released.
         '''
 
         self.mglo.release()
 
 
-def create_context(require=None, standalone=False, **settings) -> Context:
+def create_context(require=None, standalone=False, share=False, **settings) -> Context:
     '''
         Create a ModernGL context by loading OpenGL functions from an existing OpenGL context.
         An OpenGL context must exists. If rendering is done without a window please use the
@@ -1280,10 +1413,14 @@ def create_context(require=None, standalone=False, **settings) -> Context:
     if require is None:
         require = 330
 
+    mode = 'standalone' if standalone is True else 'detect'
+    if share is True:
+        mode = 'share'
+
     import moderngl.mgl as mgl
 
     ctx = Context.__new__(Context)
-    ctx.mglo, ctx.version_code = mgl.create_context(None, standalone, require)
+    ctx.mglo, ctx.version_code = mgl.create_context(glversion=require, mode=mode, **settings)
     ctx._info = None
     ctx.extra = None
 
@@ -1302,7 +1439,7 @@ def create_context(require=None, standalone=False, **settings) -> Context:
     return ctx
 
 
-def create_standalone_context(require=None, **settings) -> 'Context':
+def create_standalone_context(require=None, share=False, **settings) -> 'Context':
     '''
         Create a standalone ModernGL context.
 
@@ -1321,14 +1458,12 @@ def create_standalone_context(require=None, **settings) -> 'Context':
             :py:class:`Context` object
     '''
     if require is None:
-        require = 0
+        require = 330
 
-    backend = os.environ.get('MODERNGL_BACKEND')
-    if backend is not None:
-        settings['backend'] = backend
+    mode = 'share' if share is True else 'standalone' 
 
     ctx = Context.__new__(Context)
-    ctx.mglo, ctx.version_code = mgl.create_context(None, True, require)
+    ctx.mglo, ctx.version_code = mgl.create_context(glversion=require, mode=mode, **settings)
     ctx._screen = None
     ctx.fbo = None
     ctx._info = None

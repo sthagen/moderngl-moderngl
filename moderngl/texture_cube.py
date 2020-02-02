@@ -190,13 +190,22 @@ class TextureCube:
 
     def use(self, location=0) -> None:
         '''
-            Bind the cubemap texture.
+            Bind the texture to a texture unit.
+
+            The location is the texture unit we want to bind the texture.
+            This should correspond with the value of the ``samplerCube``
+            uniform in the shader because samplers read from the texture
+            unit we assign to them::
+
+                # Define what texture unit our two samplerCube uniforms should represent
+                program['texture_a'] = 0
+                program['texture_b'] = 1
+                # Bind textures to the texture units
+                first_texture.use(location=0)
+                second_texture.use(location=1)
 
             Args:
-                location (int): The texture location.
-                    Same as the integer value that is used for sampler3D
-                    uniforms in the shaders. The value ``0`` will bind the
-                    texture to the ``GL_TEXTURE0`` binding point.
+                location (int): The texture location/unit.
         '''
 
         self.mglo.use(location)

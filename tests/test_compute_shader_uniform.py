@@ -8,13 +8,11 @@ class TestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        raise unittest.SkipTest('NYI')
-        cls.ctx = get_context()
+        cls.ctx = get_context(require=430)
+        if not cls.ctx:
+            raise unittest.SkipTest('Compute shaders not supported')
 
     def test_1(self):
-        if self.ctx.version_code < 430:
-            self.skipTest('OpenGL 4.3 is not supported')
-
         compute_shader = self.ctx.compute_shader('''
             #version 430
 
@@ -45,8 +43,8 @@ class TestCase(unittest.TestCase):
         buf1.bind_to_storage_buffer(1)
         buf2.bind_to_storage_buffer(2)
 
-        compute_shader.uniforms['add'].value = (10.5, 20.0, 30.5, 40.0)
-        compute_shader.uniforms['mul'].value = 100.0
+        compute_shader['add'].value = (10.5, 20.0, 30.5, 40.0)
+        compute_shader['mul'].value = 100.0
         compute_shader.run()
 
         a, b, c, d = struct.unpack('4f', buf2.read())

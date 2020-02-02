@@ -140,8 +140,7 @@ class TestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        raise unittest.SkipTest('')
-        cls.ctx = get_context()
+        cls.ctx = get_context(require=330)
 
     def test_simple(self):
         vert_src = '''
@@ -163,11 +162,11 @@ class TestCase(unittest.TestCase):
 
                 prog = self.ctx.program(vertex_shader=vert_src % vtype, varyings=['v_out'])
 
-                if 'v_in' not in prog.attributes:
+                if prog.get('v_in', None) is None:
                     warnings.warn('skipping %s' % vtype['type'])
                     continue
 
-                fmt = moderngl.detect_format(prog, ['v_in'])
+                fmt = moderngl.detect_format(prog, ['v_in'], mode='struct')
                 vbo1 = self.ctx.buffer(struct.pack(fmt, *vtype['input']))
                 vbo2 = self.ctx.buffer(b'\xAA' * struct.calcsize(fmt))
                 vao = self.ctx.simple_vertex_array(prog, vbo1, 'v_in')
@@ -197,11 +196,11 @@ class TestCase(unittest.TestCase):
 
                 prog = self.ctx.program(vertex_shader=vert_src % vtype, varyings=['v_out'])
 
-                if 'v_in' not in prog.attributes:
+                if prog.get('v_in', None) is None:
                     warnings.warn('skipping %s' % vtype['type'])
                     continue
 
-                fmt = moderngl.detect_format(prog, ['v_in'])
+                fmt = moderngl.detect_format(prog, ['v_in'], mode='struct')
                 vbo1 = self.ctx.buffer(struct.pack(fmt, *(vtype['input'] * 2)))
                 vbo2 = self.ctx.buffer(b'\xAA' * struct.calcsize(fmt))
                 vao = self.ctx.simple_vertex_array(prog, vbo1, 'v_in')

@@ -8,12 +8,11 @@ class TestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.ctx = get_context()
+        cls.ctx = get_context(require=400)
+        if not cls.ctx:
+            raise unittest.SkipTest("Subroutines not supported")
 
     def test_1(self):
-        if self.ctx.version_code < 400:
-            self.skipTest('OpenGL 4.0 is not supported')
-
         vbo1 = self.ctx.buffer(struct.pack('4f', 0.0, 0.0, 0.0, 0.0))
         vbo2 = self.ctx.buffer(struct.pack('4f', 0.0, 0.0, 0.0, 0.0))
 

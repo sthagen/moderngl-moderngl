@@ -1,3 +1,7 @@
+"""
+Instanced rendering without supplying per instance data
+doing offsets with gl_InstanceID in vertex shader.
+"""
 import numpy as np
 
 import moderngl
@@ -11,6 +15,7 @@ class InstancedRendering(Example):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # gl_InstanceID offsets rotation per instance
         self.prog = self.ctx.program(
             vertex_shader='''
                 #version 330
@@ -50,18 +55,20 @@ class InstancedRendering(Example):
             1.0, 0.0, 1.0, 0.0, 0.0, 0.5,
             -0.5, 0.86, 0.0, 1.0, 0.0, 0.5,
             -0.5, -0.86, 0.0, 0.0, 1.0, 0.5,
-        ])
+        ], dtype='f4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
-        self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert', 'in_color')
+        self.vbo = self.ctx.buffer(vertices)
+        self.vao = self.ctx.vertex_array(
+            self.prog,
+            [(self.vbo, '2f 4f', 'in_vert', 'in_color')],
+        )
 
     def render(self, time, frame_time):
-        width, height = self.wnd.size
-
         self.ctx.clear(1.0, 1.0, 1.0)
         self.ctx.enable(moderngl.BLEND)
         self.scale.value = (0.5, self.aspect_ratio * 0.5)
         self.rotation.value = time
+        # For every instanced rendered gl_InstanceID increments by 1
         self.vao.render(instances=10)
 
 

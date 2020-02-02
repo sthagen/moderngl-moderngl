@@ -19,6 +19,10 @@ class Program:
 
         A Program object cannot be instantiated directly, it requires a context.
         Use :py:meth:`Context.program` to create one.
+
+        Uniform buffers can be bound using :py:meth:`Buffer.bind_to_uniform_block`
+        or can be set individually. For more complex binding yielding higher
+        performance consider using :py:class:`moderngl.Scope`.
     '''
 
     __slots__ = ['mglo', '_members', '_subroutines', '_geom', '_glo', 'ctx', 'extra']
@@ -57,7 +61,14 @@ class Program:
         .. code-block:: python
 
             # Get a uniform
-            uniform = program['color]
+            uniform = program['color']
+
+            # Uniform values can be set on the returned object
+            # or the `__setitem__` shortcut can be used.
+            program['color'].value = 1.0, 1.0, 1.0, 1.0
+
+            # Still when writing byte data we need to use the `write()` method
+            program['color'].write(buffer)
         """
         return self._members[key]
 
@@ -184,7 +195,7 @@ class Program:
         self.mglo.release()
 
 
-def detect_format(program, attributes) -> str:
+def detect_format(program, attributes, mode='mgl') -> str:
     '''
         Detect format for vertex attributes.
         The format returned does not contain padding.
@@ -201,7 +212,18 @@ def detect_format(program, attributes) -> str:
         '''
             For internal use only.
         '''
-
-        return attr.array_length * attr.dimension, attr.shape
+        # Translate shape format into attribute format
+        mgl_fmt = {
+            'd': 'f8',
+            'I': 'u'
+        }
+        # moderngl attribute format uses f, i and u
+        if mode == 'mgl':
+            return attr.array_length * attr.dimension, mgl_fmt.get(attr.shape) or attr.shape
+        # struct attribute format uses f, d, i and I
+        elif mode == 'struct':
+            return attr.array_length * attr.dimension, attr.shape
+        else:
+            raise ValueError('invalid format mode: {}'.format(mode))
 
     return ' '.join('%d%s' % fmt(program[a]) for a in attributes)

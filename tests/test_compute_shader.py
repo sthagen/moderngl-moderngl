@@ -8,13 +8,11 @@ class TestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        raise unittest.SkipTest('NYI')
-        cls.ctx = get_context()
+        cls.ctx = get_context(require=430)
+        if not cls.ctx:
+            raise unittest.SkipTest('compute shaders not supported')
 
     def test_1(self):
-        if self.ctx.version_code < 430:
-            self.skipTest('OpenGL 4.3 is not supported')
-
         compute_shader = self.ctx.compute_shader('''
             #version 430
 
@@ -50,6 +48,24 @@ class TestCase(unittest.TestCase):
         self.assertAlmostEqual(b, 3.0)
         self.assertAlmostEqual(c, 2.0)
         self.assertAlmostEqual(d, 1.0)
+
+    def test_image(self):
+        texture = self.ctx.texture((100, 100), 4)
+        texture.bind_to_image(0, read=True, write=True)
+        self.assertEqual(self.ctx.error, 'GL_NO_ERROR')
+        texture.release()
+
+    def test_image_float(self):
+        texture = self.ctx.texture((100, 100), 4, dtype='f4')
+        texture.bind_to_image(0, read=True, write=True)
+        self.assertEqual(self.ctx.error, 'GL_NO_ERROR')
+        texture.release()
+
+    def test_image_wrong_format(self):
+        texture = self.ctx.texture((100, 100), 4)
+        texture.bind_to_image(0, read=True, write=True, format=13371337)
+        self.assertEqual(self.ctx.error, 'GL_INVALID_VALUE')
+        texture.release()
 
 
 if __name__ == '__main__':

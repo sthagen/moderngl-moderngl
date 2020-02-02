@@ -7,24 +7,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 5.6.0 [Unreleased]
 
-From moderngl 5.6 context creation is done by the [glcontext](https://github.com/moderngl/glcontext)
+From ModernGL 5.6 context creation is done by the [glcontext](https://github.com/moderngl/glcontext)
 package. This means we can keep improving context creation without releasing new
 moderngl versions. The bar for contributing to context creation is also lower.
 Backends can be written in C++ or by simply using ctypes.
 
+This version also has a lot of improvements to docsstrings, api docs and documentation in general.
+Still we have a lot more work to do in this area.
+
 ### Added
 
+- Standalone `Context` can now be destroyed on all platforms
+- Compute shaders can now write to textures using `Texture*.bind_to_image`
+- `VertexBuffer.transform` now as a `buffer_offset` parameter
+  for setting the start byte offset of the output buffer.
+  This can be used in many creative ways in for example particle
+  emitting.
+- `Framebuffer` supports having only depth buffer. This makes things like shadow
+  mapping easier to work with.
+- Support for `PROGRAM_POINT_SIZE` context flag so point sizes can be set in
+  the vertex shader
 - Scissor test support. `Framebuffer.scissor` and `Context.scissor` can now be used
   to set and enable scissor testing per framebuffer.
-- The `Framebuffer.clear` have an optional `color` parameter to replace the old `red, green, blue, alpha` parameters.
+- The `Framebuffer.clear` have an optional `color` parameter to replace the
+  old `red, green, blue, alpha` parameters.
 - Samplers and Buffers have an `assign` method to simplify the scope creation.
-- Samplers have an optional `texture` parameter that will be used together with the sampler when given.
-- The Scope's `enable_only` keyword argument is deprecated in favor of the `enable` keyword argument. 
+- Samplers have an optional `texture` parameter that will be used together with
+  the sampler when given.
+- The Scope's `enable_only` keyword argument is deprecated in favor of the
+  `enable` keyword argument. 
 - Buffers have a `bind` method that replaces the tuples in the VertexArray creation.
 - VertexArrays have an optional `scope` property that will be used when rendering.
 - The VertexArray's `vertices` property is now writeable.
-- VertexArrays have an `instances` property to control the default number of instances when rendering.
-- The Context object contains the constants provided by the moderngl module. The constants are: (TRIANGLE, LINES, DEPTH_TEST, ...)
+- VertexArrays have an `instances` property to control the default number of
+  instances when rendering.
+- The Context object contains the constants provided by the moderngl module.
+  The constants are: (TRIANGLE, LINES, DEPTH_TEST, ...)
 
 ### Changed
 
@@ -32,6 +50,11 @@ Backends can be written in C++ or by simply using ctypes.
 - The `ctx.simple_vertex_array` is deprecated in favor of using `ctx.vertex_array` with the same parameters.
 - The `prog[uniform].value = value` is deprecated in favor of using `prog[uniform] = value`.
 - The `prog[uniform].write(bytes_value)` is deprecated in favor of using the `prog[uniform] = bytes_value`.
+
+### Bugs
+
+- Fixed an issue with attribute format detection causing integer and double types to fail
+- Several minor bug fixes
 
 ## [5.5.4] - 2019-11-10
 

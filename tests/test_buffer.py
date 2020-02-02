@@ -54,6 +54,23 @@ class TestBuffer(unittest.TestCase):
         buf = self.ctx.buffer(reserve=1024)
         buf.orphan()
 
+    def test_buffer_orphan_resize(self):
+        buf = self.ctx.buffer(reserve=10)
+        self.assertEqual(buf.size, 10)
+        self.assertEqual(len(buf.read()), 10)
+
+        buf.orphan(20)
+        self.assertEqual(buf.size, 20)
+        self.assertEqual(len(buf.read()), 20)
+
+        buf.orphan(100)
+        self.assertEqual(buf.size, 100)
+        self.assertEqual(len(buf.read()), 100)
+
+        buf.orphan(-100)
+        self.assertEqual(buf.size, 100)
+        self.assertEqual(len(buf.read()), 100)
+
 
 if __name__ == '__main__':
     unittest.main()

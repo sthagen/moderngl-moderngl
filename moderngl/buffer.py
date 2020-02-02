@@ -18,7 +18,7 @@ class Buffer:
 
     def __init__(self):
         self.mglo = None  #: Internal representation for debug purposes only.
-        self._size = None
+        self._size = None  #: Orignal buffer size during creation
         self._dynamic = None
         self._glo = None
         self.ctx = None  #: The context this object belongs to
@@ -37,7 +37,7 @@ class Buffer:
             int: The size of the buffer.
         '''
 
-        return self._size
+        return self.mglo.size()
 
     @property
     def dynamic(self) -> bool:
@@ -196,9 +196,9 @@ class Buffer:
 
         self.mglo.bind_to_storage_buffer(binding, offset, size)
 
-    def orphan(self) -> None:
+    def orphan(self, size=-1) -> None:
         '''
-            Orphan the buffer.
+            Orphan the buffer with the option to specify a new size.
 
             It is also called buffer re-specification.
 
@@ -211,6 +211,10 @@ class Buffer:
             It is likely that the GL driver will not be doing any allocation at all,
             but will just be pulling an old free block off the unused buffer queue and use it,
             so it is likely to be very efficient.
+
+            Keyword Args:
+                size (int): The new byte size if the buffer. If not supplied
+                            the buffer size will be unchanged.
 
             .. rubric:: Example
 
@@ -236,9 +240,13 @@ class Buffer:
 
                 >>> vbo.write(some_temporary_data)
                 >>> vao.render(...)
+
+                # We can also resize the buffer. In this case we double the size
+
+                >> vbo.orphan(vbo.size * 2)
         '''
 
-        self.mglo.orphan()
+        self.mglo.orphan(size)
 
     def release(self) -> None:
         '''

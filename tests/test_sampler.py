@@ -18,7 +18,7 @@ class TestCase(unittest.TestCase):
 
     def test_defaults(self):
         sampler = self.ctx.sampler()
-        self.assertEqual(sampler.anisotropy, 1.0)
+        self.assertTrue(sampler.anisotropy <= 1.0)
         self.assertTrue(sampler.repeat_x)
         self.assertTrue(sampler.repeat_y)
         self.assertTrue(sampler.repeat_z)

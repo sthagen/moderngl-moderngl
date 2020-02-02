@@ -333,16 +333,65 @@ class Texture:
 
     def use(self, location=0) -> None:
         '''
-            Bind the texture.
+            Bind the texture to a texture unit.
+
+            The location is the texture unit we want to bind the texture.
+            This should correspond with the value of the ``sampler2D``
+            uniform in the shader because samplers read from the texture
+            unit we assign to them::
+
+                # Define what texture unit our two sampler2D uniforms should represent
+                program['texture_a'] = 0
+                program['texture_b'] = 1
+                # Bind textures to the texture units
+                first_texture.use(location=0)
+                second_texture.use(location=1)
 
             Args:
-                location (int): The texture location.
-                    Same as the integer value that is used for sampler2D
-                    uniforms in the shaders. The value ``0`` will bind the
-                    texture to the ``GL_TEXTURE0`` binding point.
+                location (int): The texture location/unit.
         '''
 
         self.mglo.use(location)
+
+    def bind_to_image(self, unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0) -> None:
+        """Bind a texture to an image unit (OpenGL 4.2 required)
+
+        This is used to bind textures to image units for shaders.
+        The idea with image load/store is that the user can bind
+        one of the images in a Texture to a number of image binding points 
+        (which are separate from texture image units). Shaders can read 
+        information from these images and write information to them, 
+        in ways that they cannot with textures. 
+
+        It's important to specify the right access type for the image.
+        This can be set with the ``read`` and ``write`` arguments.
+        Allowed combinations are:
+
+        - **Read-only**: ``read=True`` and ``write=False``
+        - **Write-only**: ``read=False`` and ``write=True``
+        - **Read-write**: ``read=True`` and ``write=True``
+
+        ``format`` specifies the format that is to be used when performing
+        formatted stores into the image from shaders. ``format`` must be
+        compatible with the texture's internal format. **By default the format
+        of the texture is passed in. The format parameter is only needed
+        when overriding this behavior.**
+
+        More information:
+
+        - https://www.khronos.org/opengl/wiki/Image_Load_Store
+        - https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glBindImageTexture.xhtml
+
+        Args:
+            unit (int): Specifies the index of the image unit to which to bind the texture
+            texture (:py:class:`moderngl.Texture`): The texture to bind
+        Keyword Args:
+            read (bool): Allows the shader to read the image (default: ``True``)
+            write (bool): Allows the shader to write to the image (default: ``True``)
+            level (int): Level of the texture to bind (default: ``0``).
+            format (int): (optional) The OpenGL enum value representing the format (defaults to the texture's format)
+        """
+        self.mglo.bind(unit, read, write, level, format)
 
     def release(self) -> None:
         '''

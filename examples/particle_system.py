@@ -51,7 +51,8 @@ class Particles(Example):
             out vec2 out_prev;
 
             void main() {
-                out_pos = in_pos * 2.0 - in_prev + Acc;
+                vec2 velocity = in_pos - in_prev;
+                out_pos = in_pos + velocity + Acc;
                 out_prev = in_pos;
             }
         ''',

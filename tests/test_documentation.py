@@ -33,7 +33,7 @@ class TestCase(unittest.TestCase):
             self.assertEqual(docsig, sig, msg=filename + '::' + method)
 
     def test_context_docs(self):
-        self.validate('context.rst', 'Context', ['core_profile_check'])
+        self.validate('context.rst', 'Context', ['core_profile_check'], ['__enter__', '__exit__'])
 
     def test_program_docs(self):
         self.validate('program.rst', 'Program', [], ['__getitem__', '__setitem__', '__eq__', '__iter__'])
@@ -69,7 +69,7 @@ class TestCase(unittest.TestCase):
         self.validate('scope.rst', 'Scope', [])
 
     def test_compute_shader_docs(self):
-        self.validate('compute_shader.rst', 'ComputeShader', [])
+        self.validate('compute_shader.rst', 'ComputeShader', [], ['__getitem__', '__setitem__', '__eq__', '__iter__'])
 
     def test_subroutine_docs(self):
         self.validate('subroutine.rst', 'Subroutine', [])
