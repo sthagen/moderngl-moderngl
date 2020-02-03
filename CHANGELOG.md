@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 5.6.0 [Unreleased]
+# [5.6.0] - 2020-02-01
 
 From ModernGL 5.6 context creation is done by the [glcontext](https://github.com/moderngl/glcontext)
 package. This means we can keep improving context creation without releasing new
@@ -179,7 +179,7 @@ but a few additions and fixes where cherry-picked from the 5.6 branch.
 
 ### Fixed
 
-- `standalone_context` on linux [issue #173](https://github.com/cprogrammer1994/ModernGL/issues/173)
+- `standalone_context` on linux [issue #173](https://github.com/moderngl/moderngl/issues/173)
 
 ## [5.0.5] - 2018-03-21
 
@@ -539,44 +539,44 @@ For more information please see: [Differences between ModernGL5 and ModernGL4](h
 
 - It was a tool for me to develop games in python
 
-[Unreleased]: https://github.com/cprogrammer1994/ModernGL/compare/5.5.4...master
-[5.5.4]: https://github.com/cprogrammer1994/ModernGL/compare/5.5.3...5.5.4
-[5.5.3]: https://github.com/cprogrammer1994/ModernGL/compare/5.5.2...5.5.3
-[5.5.2]: https://github.com/cprogrammer1994/ModernGL/compare/5.5.1...5.5.2
-[5.5.1]: https://github.com/cprogrammer1994/ModernGL/compare/5.5.0...5.5.1
-[5.5.0]: https://github.com/cprogrammer1994/ModernGL/compare/5.4.2...5.5.0
-[5.4.2]: https://github.com/cprogrammer1994/ModernGL/compare/5.4.1...5.4.2
-[5.4.1]: https://github.com/cprogrammer1994/ModernGL/compare/5.4.0...5.4.1
-[5.4.0]: https://github.com/cprogrammer1994/ModernGL/compare/5.3.0...5.4.0
-[5.3.0]: https://github.com/cprogrammer1994/ModernGL/compare/5.2.1...5.3.0
-[5.2.1]: https://github.com/cprogrammer1994/ModernGL/compare/5.2.0...5.2.1
-[5.2.0]: https://github.com/cprogrammer1994/ModernGL/compare/5.1.0...5.2.0
-[5.1.0]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.7...5.1.0
-[5.0.7]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.6...5.0.7
-[5.0.6]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.5...5.0.6
-[5.0.5]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.4...5.0.5
-[5.0.4]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.3...5.0.4
-[5.0.3]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.2...5.0.3
-[5.0.2]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.1...5.0.2
-[5.0.1]: https://github.com/cprogrammer1994/ModernGL/compare/5.0.0...5.0.1
-[5.0.0]: https://github.com/cprogrammer1994/ModernGL/tree/5.0.0
-[4.2.2]: https://github.com/cprogrammer1994/ModernGL/compare/4.2.1...4.2.2
-[4.2.1]: https://github.com/cprogrammer1994/ModernGL/compare/4.2.0...4.2.1
-[4.2.0]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.12...4.2.0
-[4.1.12]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.11...4.1.12
-[4.1.11]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.10...4.1.11
-[4.1.10]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.9...4.1.10
-[4.1.9]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.8...4.1.9
-[4.1.8]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.7...4.1.8
-[4.1.7]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.6...4.1.7
-[4.1.6]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.5...4.1.6
-[4.1.5]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.4...4.1.5
-[4.1.4]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.3...4.1.4
-[4.1.3]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.2...4.1.3
-[4.1.2]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.1...4.1.2
-[4.1.1]: https://github.com/cprogrammer1994/ModernGL/compare/4.1.0...4.1.1
-[4.1.0]: https://github.com/cprogrammer1994/ModernGL/compare/4.0.0...4.1.0
-[4.0.0]: https://github.com/cprogrammer1994/ModernGL/tree/4.0.0
-[3.1.5]: https://github.com/cprogrammer1994/ModernGL/compare/3.1.0...3.1.5
-[3.1.0]: https://github.com/cprogrammer1994/ModernGL/tree/3.1.0
-[2.4.1]: https://github.com/cprogrammer1994/ModernGL/tree/2.4.1
+[5.6.0]: https://github.com/moderngl/moderngl/compare/5.5.4...5.6.0
+[5.5.4]: https://github.com/moderngl/moderngl/compare/5.5.3...5.5.4
+[5.5.3]: https://github.com/moderngl/moderngl/compare/5.5.2...5.5.3
+[5.5.2]: https://github.com/moderngl/moderngl/compare/5.5.1...5.5.2
+[5.5.1]: https://github.com/moderngl/moderngl/compare/5.5.0...5.5.1
+[5.5.0]: https://github.com/moderngl/moderngl/compare/5.4.2...5.5.0
+[5.4.2]: https://github.com/moderngl/moderngl/compare/5.4.1...5.4.2
+[5.4.1]: https://github.com/moderngl/moderngl/compare/5.4.0...5.4.1
+[5.4.0]: https://github.com/moderngl/moderngl/compare/5.3.0...5.4.0
+[5.3.0]: https://github.com/moderngl/moderngl/compare/5.2.1...5.3.0
+[5.2.1]: https://github.com/moderngl/moderngl/compare/5.2.0...5.2.1
+[5.2.0]: https://github.com/moderngl/moderngl/compare/5.1.0...5.2.0
+[5.1.0]: https://github.com/moderngl/moderngl/compare/5.0.7...5.1.0
+[5.0.7]: https://github.com/moderngl/moderngl/compare/5.0.6...5.0.7
+[5.0.6]: https://github.com/moderngl/moderngl/compare/5.0.5...5.0.6
+[5.0.5]: https://github.com/moderngl/moderngl/compare/5.0.4...5.0.5
+[5.0.4]: https://github.com/moderngl/moderngl/compare/5.0.3...5.0.4
+[5.0.3]: https://github.com/moderngl/moderngl/compare/5.0.2...5.0.3
+[5.0.2]: https://github.com/moderngl/moderngl/compare/5.0.1...5.0.2
+[5.0.1]: https://github.com/moderngl/moderngl/compare/5.0.0...5.0.1
+[5.0.0]: https://github.com/moderngl/moderngl/tree/5.0.0
+[4.2.2]: https://github.com/moderngl/moderngl/compare/4.2.1...4.2.2
+[4.2.1]: https://github.com/moderngl/moderngl/compare/4.2.0...4.2.1
+[4.2.0]: https://github.com/moderngl/moderngl/compare/4.1.12...4.2.0
+[4.1.12]: https://github.com/moderngl/moderngl/compare/4.1.11...4.1.12
+[4.1.11]: https://github.com/moderngl/moderngl/compare/4.1.10...4.1.11
+[4.1.10]: https://github.com/moderngl/moderngl/compare/4.1.9...4.1.10
+[4.1.9]: https://github.com/moderngl/moderngl/compare/4.1.8...4.1.9
+[4.1.8]: https://github.com/moderngl/moderngl/compare/4.1.7...4.1.8
+[4.1.7]: https://github.com/moderngl/moderngl/compare/4.1.6...4.1.7
+[4.1.6]: https://github.com/moderngl/moderngl/compare/4.1.5...4.1.6
+[4.1.5]: https://github.com/moderngl/moderngl/compare/4.1.4...4.1.5
+[4.1.4]: https://github.com/moderngl/moderngl/compare/4.1.3...4.1.4
+[4.1.3]: https://github.com/moderngl/moderngl/compare/4.1.2...4.1.3
+[4.1.2]: https://github.com/moderngl/moderngl/compare/4.1.1...4.1.2
+[4.1.1]: https://github.com/moderngl/moderngl/compare/4.1.0...4.1.1
+[4.1.0]: https://github.com/moderngl/moderngl/compare/4.0.0...4.1.0
+[4.0.0]: https://github.com/moderngl/moderngl/tree/4.0.0
+[3.1.5]: https://github.com/moderngl/moderngl/compare/3.1.0...3.1.5
+[3.1.0]: https://github.com/moderngl/moderngl/tree/3.1.0
+[2.4.1]: https://github.com/moderngl/moderngl/tree/2.4.1

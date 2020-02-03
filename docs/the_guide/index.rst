@@ -11,3 +11,4 @@ The Guide
     program.rst
     vertex_array.rst
     rendering.rst
+    headless_ubunut18_server.rst

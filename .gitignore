@@ -11,6 +11,7 @@
 /.eggs
 
 /docs/next/_build
+/docs/_build
 
 /.vscode/*
 !/.vscode/tasks.json

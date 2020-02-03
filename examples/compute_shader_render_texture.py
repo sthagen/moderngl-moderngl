@@ -18,15 +18,28 @@ class RenderTextureCompute(Example):
             #version 430
 
             layout (local_size_x = 16, local_size_y = 16) in;
-            layout(rg32f, location=0) writeonly uniform image2D destTex;
+            // match the input texture format!
+            layout(rgba8, location=0) writeonly uniform image2D destTex;
 
             uniform float time;
 
             void main() {
-                ivec2 ij = ivec2(gl_GlobalInvocationID.xy);
-                float localCoef = length(vec2(ivec2(gl_LocalInvocationID.xy) - 8) / 8.0);
-                float globalCoef = sin(float(gl_WorkGroupID.x+gl_WorkGroupID.y) * 0.1 + time) * 0.5;
-                imageStore(destTex, ij, vec4(1.0 - globalCoef * localCoef, 0.0, 0.0, 0.0));
+                // texel coordinate we are writing to
+                ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
+                // Calculate 1.0 - distance from the center in each work group
+                float local = 1.0 - length(vec2(ivec2(gl_LocalInvocationID.xy) - 8) / 8.0);
+                // Wave covering the screen diagonally
+                float global = sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y) * 0.1 + time) / 2.0 + 0.5;
+                imageStore(
+                    destTex,
+                    texelPos,
+                    vec4(
+                        local,
+                        global,
+                        0.0,
+                        1.0
+                    )
+                );
             }
         ''')
         self.compute['destTex'] = 0
@@ -56,9 +69,9 @@ class RenderTextureCompute(Example):
             """,
         )
 
-        # GL_R32F texture
-        self.texture = self.ctx.texture((256, 256), 1, dtype='f4')
-        self.texture.filter = mgl.LINEAR, mgl.LINEAR
+        # RGB_8 texture
+        self.texture = self.ctx.texture((256, 256), 4)
+        self.texture.filter = mgl.NEAREST, mgl.NEAREST
         self.quad_fs = geometry.quad_fs()
 
     def render(self, time, frame_time):
@@ -68,7 +81,10 @@ class RenderTextureCompute(Example):
         gw, gh = 16, 16
         nx, ny, nz = int(w/gw), int(h/gh), 1
 
-        self.compute['time'] = time
+        try:
+            self.compute['time'] = time
+        except Exception:
+            pass
         # Automatically binds as a GL_R32F / r32f (read from the texture)
         self.texture.bind_to_image(0, read=False, write=True)
         self.compute.run(nx, ny, nz)
