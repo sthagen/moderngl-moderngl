@@ -2,10 +2,13 @@
 Headless on Ubuntu 18 Server
 ============================
 
+Dependencies
+------------
+
 Headless rendering can be achieved with EGL or X11.
 We'll cover both cases.
 
-Starting with fresh ubuntu 18 install we need to install required
+Starting with fresh ubuntu 18 server install we need to install required
 packages::
 
     sudo apt-install python3-pip mesa-utils libegl1-mesa xvfb
@@ -125,3 +128,4 @@ it to a png file so we can verify the contents.
     image = Image.frombytes('RGB', fbo.size, data)
     image = image.transpose(Image.FLIP_TOP_BOTTOM)
     image.save('output.png')
+

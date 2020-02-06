@@ -1392,8 +1392,7 @@ class Context:
 def create_context(require=None, standalone=False, share=False, **settings) -> Context:
     '''
         Create a ModernGL context by loading OpenGL functions from an existing OpenGL context.
-        An OpenGL context must exists. If rendering is done without a window please use the
-        :py:func:`create_standalone_context` instead.
+        An OpenGL context must exists.
 
         Example::
 
@@ -1403,8 +1402,13 @@ def create_context(require=None, standalone=False, share=False, **settings) -> C
             # Require at least OpenGL 4.3
             ctx = moderngl.create_context(require=430)
 
+            # Create a headless context requiring OpenGL 4.3
+            ctx = moderngl.create_context(require=430, standalone=True)
+
         Keyword Arguments:
-            require (int): OpenGL version code.
+            require (int): OpenGL version code (default: 330)
+            standalone (bool): Headless flag
+            **settings: Other backend specific settings
 
         Returns:
             :py:class:`Context` object
@@ -1442,6 +1446,7 @@ def create_context(require=None, standalone=False, share=False, **settings) -> C
 def create_standalone_context(require=None, share=False, **settings) -> 'Context':
     '''
         Create a standalone ModernGL context.
+        The preferred way to make a context ``
 
         Example::
 

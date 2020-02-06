@@ -8,7 +8,8 @@ Install ModernGL
 
     $ pip install --upgrade ModernGL
 
-This tutorial will also use ``numpy`` to generate data and ``Pillow`` to save the final image.
+This tutorial will also use ``numpy`` to generate data and ``Pillow``
+to save the final image.
 
 .. code-block:: sh
 
