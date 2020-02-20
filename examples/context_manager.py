@@ -13,7 +13,7 @@ class ContextManager:
         if ContextManager.ctx is None:
             try:
                 ContextManager.ctx = moderngl.create_context()
-            except moderngl.Error:
+            except:
                 if allow_fallback_standalone_context:
                     ContextManager.ctx = moderngl.create_standalone_context()
                 else:
