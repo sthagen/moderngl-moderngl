@@ -769,6 +769,41 @@ int MGLContext_set_front_face(MGLContext * self, PyObject * value) {
 	return 0;
 }
 
+PyObject * MGLContext_get_cull_face(MGLContext * self) {
+	if (self->front_face == GL_FRONT) {
+		static PyObject * res_cw = PyUnicode_FromString("front");
+		Py_INCREF(res_cw);
+		return res_cw;
+	}
+	else if (self->front_face == GL_BACK) {
+		static PyObject * res_cw = PyUnicode_FromString("back");
+		Py_INCREF(res_cw);
+		return res_cw;
+	}
+	static PyObject * res_ccw = PyUnicode_FromString("front_and_back");
+	Py_INCREF(res_ccw);
+	return res_ccw;
+}
+
+int MGLContext_set_cull_face(MGLContext * self, PyObject * value) {
+	const char * str = PyUnicode_AsUTF8(value);
+
+	if (!strcmp(str, "front")) {
+		self->cull_face = GL_FRONT;
+	} else if (!strcmp(str, "back")) {
+		self->cull_face = GL_BACK;
+    } else if (!strcmp(str, "front_and_back")) {
+		self->cull_face = GL_FRONT_AND_BACK;
+	} else {
+		MGLError_Set("invalid cull_face");
+		return -1;
+	}
+
+	self->gl.CullFace(self->cull_face);
+	return 0;
+}
+
+
 PyObject * MGLContext_get_patch_vertices(MGLContext * self) {
 	int patch_vertices = 0;
 
@@ -1349,6 +1384,7 @@ PyGetSetDef MGLContext_tp_getseters[] = {
 
 	{(char *)"wireframe", (getter)MGLContext_get_wireframe, (setter)MGLContext_set_wireframe, 0, 0},
 	{(char *)"front_face", (getter)MGLContext_get_front_face, (setter)MGLContext_set_front_face, 0, 0},
+	{(char *)"cull_face", (getter)MGLContext_get_cull_face, (setter)MGLContext_set_cull_face, 0, 0},
 
 	{(char *)"patch_vertices", (getter)MGLContext_get_patch_vertices, (setter)MGLContext_set_patch_vertices, 0, 0},
 

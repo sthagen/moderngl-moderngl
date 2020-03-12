@@ -129,3 +129,38 @@ def prog_shadow_test(standalone_context):
     prog['u_depth_triangle'].value = depth_triangle_in_view_space
     #
     return prog
+
+
+@pytest.fixture
+def fbo_with_rasterised_triangle(standalone_context, vbo_triangle):
+    def _build_fbo_with_rasterised_triangle(prog, size=(4, 4), depth_clear=1.0):
+        tex_depth = standalone_context.depth_texture(size)  # implicit -> dtype='f4', components=1
+        fbo_depth = standalone_context.framebuffer(depth_attachment=tex_depth)
+        fbo_depth.use()
+        fbo_depth.clear(depth=depth_clear)
+
+        # vertex array object of triangle with depth pass prog
+        vao_triangle = standalone_context.simple_vertex_array(prog, vbo_triangle, 'in_vert')
+        # Now we render a triangle in there
+        vao_triangle.render()
+
+        return fbo_depth, tex_depth
+
+    return _build_fbo_with_rasterised_triangle
+
+
+@pytest.fixture
+def np_triangle_rasterised():
+    def _build_np_triangle_rastised(size):
+        # It should have 0.5's where the triangle lies.
+        depth_value_from_triangle_vertices = 0.0
+        # Map [-1, +1] -> [0, 1]
+        depth_value_in_depthbuffer = (depth_value_from_triangle_vertices + 1) * 0.5
+        return np.array(
+            [
+                [depth_value_in_depthbuffer] * (size[0] - (j + 1)) + [1.0] * (j + 1)
+                for j in range(size[1])
+            ]
+        )
+
+    return _build_np_triangle_rastised

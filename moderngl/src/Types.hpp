@@ -123,6 +123,7 @@ struct MGLContext {
 
 	int enable_flags;
 	int front_face;
+	int cull_face;
 
 	int depth_func;
 	int blend_func_src;

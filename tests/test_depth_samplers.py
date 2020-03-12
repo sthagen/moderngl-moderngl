@@ -7,61 +7,23 @@ import moderngl as mgl
 from scipy import ndimage
 
 
-def _build_fbo_with_rasterised_triangle(ctx, prog, vbo, size=(4, 4), 
-                                        depth_clear=1.0):
-    """
-
-    :param ctx:
-    :param prog:
-    :param vbo:
-    :param size:
-    :return:
-    """
-    tex_depth = ctx.depth_texture(size)  # implicit -> dtype='f4', components=1
-    fbo_depth = ctx.framebuffer(depth_attachment=tex_depth)
-    fbo_depth.use()
-    fbo_depth.clear(depth=depth_clear)
-
-    # vertex array object of triangle with depth pass prog
-    vao_triangle = ctx.simple_vertex_array(prog, vbo, 'in_vert')
-    # Now we render a triangle in there
-    vao_triangle.render()
-
-    return fbo_depth, tex_depth
-
-
-def test_depth_sampler(standalone_context, prog_render_depth_pass, 
-                       prog_draw_depth, vbo_triangle, vbo_quad):
-    """
-
-    :param standalone_context:
-    :param prog_render_depth_pass:
-    :param prog_draw_depth:
-    :param vbo_triangle:
-    :param vbo_quad:
-    :return:
-    """
+def test_depth_sampler(standalone_context,
+                       prog_render_depth_pass, prog_draw_depth,
+                       vbo_triangle, vbo_quad,
+                       fbo_with_rasterised_triangle,
+                       np_triangle_rasterised):
     ctx = standalone_context
     ctx.enable(mgl.DEPTH_TEST)
 
     size = (16,) * 2
-    fbo_depth, tex_depth = _build_fbo_with_rasterised_triangle(ctx, prog_render_depth_pass, vbo_triangle, size)
+    fbo_depth, tex_depth = fbo_with_rasterised_triangle(prog_render_depth_pass, size)
+    depth_from_dbo = np.frombuffer(tex_depth.read(), dtype=np.dtype('f4')).reshape(size[::-1])
 
     ############################################################################
     # EXPECTED DATAS                                                                                                   #
     # It should have 0.5's where the triangle lies.                                                                    #
     ############################################################################
-    depth_from_dbo = np.frombuffer(tex_depth.read(), dtype=np.dtype('f4')).reshape(size[::-1])
-    depth_value_from_triangle_vertices = 0.0
-    # Map [-1, +1] -> [0, 1]
-    depth_value_in_depthbuffer = (depth_value_from_triangle_vertices + 1) * 0.5
-    np_triangle_raster = np.array(
-        [
-            [depth_value_in_depthbuffer] * (size[0] - (j + 1)) + [1.0] * (j + 1)
-            for j in range(size[1])
-        ]
-    )
-    ############################################################################
+    np_triangle_raster = np_triangle_rasterised(size)
 
     depth_tex_filter = (moderngl.NEAREST, moderngl.NEAREST)
     compare_func = ''
@@ -97,21 +59,15 @@ def test_depth_sampler(standalone_context, prog_render_depth_pass,
     _with_texture_parameters()
 
 
-def test_sampler_shadow(standalone_context, prog_render_depth_pass, prog_shadow_test, vbo_triangle, vbo_quad):
-    """
-
-    :param standalone_context:
-    :param prog_render_depth_pass:
-    :param prog_shadow_test:
-    :param vbo_triangle:
-    :param vbo_quad:
-    :return:
-    """
+def test_sampler_shadow(standalone_context,
+                        prog_render_depth_pass, prog_shadow_test,
+                        vbo_triangle, vbo_quad,
+                        fbo_with_rasterised_triangle):
     ctx = standalone_context
     ctx.enable(mgl.DEPTH_TEST)
 
     size = (3,) * 2
-    fbo_depth, tex_depth = _build_fbo_with_rasterised_triangle(ctx, prog_render_depth_pass, vbo_triangle, size)
+    fbo_depth, tex_depth = fbo_with_rasterised_triangle(prog_render_depth_pass, size)
 
     ############################################################################
     # EXPECTED DATAS                                                                                                   #
@@ -162,26 +118,16 @@ def test_sampler_shadow(standalone_context, prog_render_depth_pass, prog_shadow_
 
 def test_sampler_shadow_with_bilinear_interpolation(
         standalone_context,
-        prog_render_depth_pass,
-        prog_shadow_test,
-        vbo_triangle,
-        vbo_quad
+        prog_render_depth_pass, prog_shadow_test,
+        vbo_triangle, vbo_quad,
+        fbo_with_rasterised_triangle
 ):
-    """
-
-    :param standalone_context:
-    :param prog_render_depth_pass:
-    :param prog_shadow_test:
-    :param vbo_triangle:
-    :param vbo_quad:
-    :return:
-    """
     ctx = standalone_context
     ctx.enable(mgl.DEPTH_TEST)
 
     size = (7,) * 2
 
-    fbo_depth, tex_depth = _build_fbo_with_rasterised_triangle(ctx, prog_render_depth_pass, vbo_triangle, size)
+    fbo_depth, tex_depth = fbo_with_rasterised_triangle(prog_render_depth_pass, size)
 
     ############################################################################
     # EXPECTED DATAS                                                           #

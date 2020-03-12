@@ -478,6 +478,30 @@ class Context:
         self.mglo.front_face = str(value)
 
     @property
+    def cull_face(self) -> str:
+        '''
+            str: The cull_face. Acceptable values are ``'back'`` (default) ``'front'`` or ``'front_and_back'``.
+
+            Face culling must be enabled for this to have any effect:
+            ``ctx.enable(moderngl.CULL_FACE)``.
+
+            Example::
+
+                #
+                ctx.cull_face = 'front'
+                #
+                ctx.cull_face = 'back'
+                #
+                ctx.cull_face = 'front_and_back'
+        '''
+
+        return self.mglo.cull_face
+
+    @cull_face.setter
+    def cull_face(self, value):
+        self.mglo.cull_face = str(value)
+
+    @property
     def patch_vertices(self) -> int:
         '''
             int: The number of vertices that will be used to make up a single patch
