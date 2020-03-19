@@ -48,12 +48,19 @@ class SimpleColorTriangle(Example):
             0.0, 0.8, 1.0, 0.0, 0.0,
             -0.6, -0.8, 0.0, 1.0, 0.0,
             0.6, -0.8, 0.0, 0.0, 1.0,
-        ])
+        ], dtype='f4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(vertices)
 
         # We control the 'in_vert' and `in_color' variables
-        self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert', 'in_color')
+        self.vao = self.ctx.vertex_array(
+            self.prog,
+            [
+                # Map in_vert to the first 2 floats
+                # Map in_color to the next 3 floats
+                (self.vbo, '2f 3f', 'in_vert', 'in_color')
+            ],
+        )
 
     def render(self, time: float, frame_time: float):
         self.ctx.clear(1.0, 1.0, 1.0)
