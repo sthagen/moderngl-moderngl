@@ -898,7 +898,8 @@ class Context:
                 size (tuple): The width, height of the texture. Each side of
                               the cube will have this size.
                 components (int): The number of components 1, 2, 3 or 4.
-                data (bytes): Content of the texture.
+                data (bytes): Content of the texture. The data should be have the following ordering:
+                              positive_x, negative_x, positive_y, negative_y, positive_z + negative_z
 
             Keyword Args:
                 alignment (int): The byte alignment 1, 2, 4 or 8.
