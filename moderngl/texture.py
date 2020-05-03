@@ -301,10 +301,11 @@ class Texture:
 
     def write(self, data, viewport=None, *, level=0, alignment=1) -> None:
         '''
-            Update the content of the texture.
+            Update the content of the texture from byte data
+            or a moderngl ``Buffer```.
 
             Args:
-                data (bytes): The pixel data.
+                data (Union[bytes, Buffer]): The pixel data.
                 viewport (tuple): The viewport.
 
             Keyword Args:
