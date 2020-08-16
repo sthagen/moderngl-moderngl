@@ -480,7 +480,9 @@ class Context:
     @property
     def cull_face(self) -> str:
         '''
-            str: The cull_face. Acceptable values are ``'back'`` (default) ``'front'`` or ``'front_and_back'``.
+            str: The face side to cull. Acceptable values are ``'back'`` (default) ``'front'`` or ``'front_and_back'``.
+
+            This is similar to :py:meth:`Context.front_face`
 
             Face culling must be enabled for this to have any effect:
             ``ctx.enable(moderngl.CULL_FACE)``.

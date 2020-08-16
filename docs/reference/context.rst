@@ -64,6 +64,7 @@ Attributes
 .. autoattribute:: Context.screen
 .. autoattribute:: Context.fbo
 .. autoattribute:: Context.front_face
+.. autoattribute:: Context.cull_face
 .. autoattribute:: Context.wireframe
 .. autoattribute:: Context.max_samples
 .. autoattribute:: Context.max_integer_samples

@@ -377,6 +377,16 @@ PyObject * MGLVertexArray_transform(MGLVertexArray * self, PyObject * args) {
 
 	const GLMethods & gl = self->context->gl;
 
+	// If geo shaders is the output we need to feedback with the output primitive type.
+	// This is limited to GL_POINTS, GL_LINES, GL_TRIANGLES
+	int output_mode = mode;
+	if (self->program->geometry_output > -1) {
+		output_mode = self->program->geometry_output_feedback;
+		if (output_mode == -1) {
+			MGLError_Set("Geometry shader output is limited to points, line_strip and triangle_strip for geometry shader transforms");
+		}
+	}
+
 	gl.UseProgram(self->program->program_obj);
 	gl.BindVertexArray(self->vertex_array_obj);
 
@@ -387,7 +397,7 @@ PyObject * MGLVertexArray_transform(MGLVertexArray * self, PyObject * args) {
 	}
 
 	gl.Enable(GL_RASTERIZER_DISCARD);
-	gl.BeginTransformFeedback(mode);
+	gl.BeginTransformFeedback(output_mode);
 
 	MGLVertexArray_SET_SUBROUTINES(self, gl);
 

@@ -188,6 +188,25 @@ Code is tested with [pep8], [flake8], [prospector] and [pylint]
 
 - [Code of conduct](https://github.com/cprogrammer1994/ModernGL/blob/master/.github/CODE_OF_CONDUCT.md)
 
+## Citation
+
+If you need to cite this repository in academic research:
+```txt
+@Online{Dombi2020,
+  author = {Szabolcs Dombi},
+  title = {ModernGL, high performance python bindings for OpenGL 3.3+},
+  date = {2020-05-01},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/moderngl/moderngl}},
+  commit = {<insert hash if needed>}
+}
+```
+
+If commit hash is required this can be found per release here:
+https://github.com/moderngl/moderngl/releases
+
+
 ## Contributors
 
 - [Szabolcs Dombi](https://github.com/cprogrammer1994)

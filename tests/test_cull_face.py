@@ -44,3 +44,5 @@ def test_cull_face(standalone_context,
 
     # cull face is set to front_and_back, only one 'front' triangle in the scene => the triangle is culled
     _do_test_cull_face('front_and_back', np_clear_depth)
+
+    ctx.enable_only(mgl.NOTHING)

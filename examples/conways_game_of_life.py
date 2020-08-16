@@ -92,10 +92,10 @@ class Conway(Example):
         self.texture.swizzle = 'RRR1'
         self.texture.use()
 
-        self.vbo = self.ctx.buffer(canvas.tobytes())
+        self.vbo = self.ctx.buffer(canvas)
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
 
-        self.text = self.ctx.buffer(grid.tobytes())
+        self.text = self.ctx.buffer(grid)
         self.tao = self.ctx.simple_vertex_array(self.transform, self.text, 'in_text')
         self.pbo = self.ctx.buffer(reserve=pixels.nbytes)
 

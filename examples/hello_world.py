@@ -39,9 +39,9 @@ class HelloWorld(Example):
             0.0, 0.8,
             -0.6, -0.8,
             0.6, -0.8,
-        ])
+        ], dtype='f4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(vertices)
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
 
     def render(self, time, frame_time):

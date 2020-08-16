@@ -184,7 +184,7 @@ class Renderer(QtWidgets.QOpenGLWidget):
             0, 1, 2,
             1, 2, 3,
         ]).astype('i4')
-        self.index_buffer = self.context.buffer(index_data.tobytes())
+        self.index_buffer = self.context.buffer(index_data)
 
         self.vbo_data = np.array([
             # x     y     u    v     r    g    b

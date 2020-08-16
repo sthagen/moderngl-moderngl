@@ -87,9 +87,9 @@ class PerspectiveProjection(Example):
             grid.append([i - 32, -32.0, 0.0, i - 32, 32.0, 0.0])
             grid.append([-32.0, i - 32, 0.0, 32.0, i - 32, 0.0])
 
-        grid = np.array(grid)
+        grid = np.array(grid, dtype='f4')
 
-        self.vbo = self.ctx.buffer(grid.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(grid)
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'vert')
 
     def render(self, time: float, frame_time: float):

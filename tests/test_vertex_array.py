@@ -1,3 +1,4 @@
+from array import array
 import unittest
 
 import moderngl
@@ -12,14 +13,58 @@ class TestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.ctx = get_context()
 
+    def test_padding(self):
+        prog = self.ctx.program(
+            vertex_shader="""
+            #version 330
+            in vec2 pos;
+            in vec2 velocity;
+            out vec2 out_pos;
+            void main() {
+                out_pos = pos + velocity;
+            }
+            """,
+        )
+        buffer = self.ctx.buffer(array('f', range(16)))
+        self.ctx.vertex_array(prog, [(buffer, '2f 2x4', 'pos')])
+        self.ctx.vertex_array(prog, [(buffer, '2f 2f', 'pos', 'velocity')])
+
+    def test_empty(self):
+        prog = self.ctx.program(
+            vertex_shader="""
+            #version 330
+            in vec2 pos;
+            in vec2 velocity;
+            out vec2 out_pos;
+            void main() {
+                out_pos = pos + velocity;
+            }
+            """,
+        )
+        self.ctx.vertex_array(prog, [])
+
+    # def test_optional(self):
+    #     prog = self.ctx.program(
+    #         vertex_shader="""
+    #         #version 330
+    #         in vec2 pos;
+    #         in vec2 velocity;
+    #         in vec4 color;
+    #         out vec2 out_pos;
+    #         void main() {
+    #             out_pos = pos + velocity;
+    #         }
+    #         """,
+    #     )
+    #     buffer = self.ctx.buffer(array('f', range(16)))
+    #     self.ctx.vertex_array(prog, [(buffer, '2f 2f 4f', 'pos', 'velocity', 'color?')])
+
     def test_1(self):
         prog = self.ctx.program(
             vertex_shader='''
                 #version 330
-
                 in vec4 in_vert;
                 out vec4 out_vert;
-
                 void main() {
                     out_vert = in_vert;
                 }

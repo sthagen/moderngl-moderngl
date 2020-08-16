@@ -64,7 +64,7 @@ PyObject * MGLContext_texture_array(MGLContext * self, PyObject * args) {
 	if (data != Py_None) {
 		int get_buffer = PyObject_GetBuffer(data, &buffer_view, PyBUF_SIMPLE);
 		if (get_buffer < 0) {
-			MGLError_Set("data (%s) does not support buffer interface", Py_TYPE(data)->tp_name);
+			// Propagate the default error
 			return 0;
 		}
 	} else {
@@ -258,7 +258,7 @@ PyObject * MGLTextureArray_read_into(MGLTextureArray * self, PyObject * args) {
 
 		int get_buffer = PyObject_GetBuffer(data, &buffer_view, PyBUF_WRITABLE);
 		if (get_buffer < 0) {
-			MGLError_Set("the buffer (%s) does not support buffer interface", Py_TYPE(data)->tp_name);
+			// Propagate the default error
 			return 0;
 		}
 
@@ -376,7 +376,7 @@ PyObject * MGLTextureArray_write(MGLTextureArray * self, PyObject * args) {
 
 		int get_buffer = PyObject_GetBuffer(data, &buffer_view, PyBUF_SIMPLE);
 		if (get_buffer < 0) {
-			MGLError_Set("data (%s) does not support buffer interface", Py_TYPE(data)->tp_name);
+			// Propagate the default error
 			return 0;
 		}
 

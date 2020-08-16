@@ -7,7 +7,7 @@ from ported._example import Example
 def particle():
     a = np.random.uniform(0.0, np.pi * 2.0)
     r = np.random.uniform(0.0, 0.001)
-    return np.array([0.0, 0.0, np.cos(a) * r - 0.003, np.sin(a) * r - 0.008]).astype('f4').tobytes()
+    return np.array([0.0, 0.0, np.cos(a) * r - 0.003, np.sin(a) * r - 0.008]).astype('f4')
 
 
 class Particles(Example):

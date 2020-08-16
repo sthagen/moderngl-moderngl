@@ -105,7 +105,7 @@ class ToyCars(Example):
             (0.0, 0.0, 1.0),
         )
 
-        self.mvp.write((proj * lookat).astype('f4').tobytes())
+        self.mvp.write((proj * lookat).astype('f4'))
         self.light.value = camera_pos
 
         self.vbo.write(b''.join(struct.pack(

@@ -40,7 +40,7 @@ class GenerateData(Example):
             print(data[i:i + 3], data[i + 3:i + 6])
 
     def render(self, time, frame_time):
-        self.wnd.close()
+        exit(0)
 
 
 if __name__ == '__main__':

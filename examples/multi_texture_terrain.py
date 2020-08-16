@@ -72,8 +72,8 @@ class MultiTextireTerrain(Example):
 
         vertices, index = terrain(32)
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
-        self.ibo = self.ctx.buffer(index.astype('i4').tobytes())
+        self.vbo = self.ctx.buffer(vertices.astype('f4'))
+        self.ibo = self.ctx.buffer(index.astype('i4'))
 
         vao_content = [
             (self.vbo, '2f', 'in_vert'),
@@ -116,7 +116,7 @@ class MultiTextireTerrain(Example):
             (0.0, 0.0, 1.0),
         )
 
-        self.mvp.write((proj * lookat).astype('f4').tobytes())
+        self.mvp.write((proj * lookat).astype('f4'))
         self.vao.render(moderngl.TRIANGLE_STRIP)
 
 

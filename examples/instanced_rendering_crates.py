@@ -95,13 +95,13 @@ class InstancedCrates(Example):
             (0.0, 0.0, 1.0),
         )
 
-        self.mvp.write((proj * lookat).astype('f4').tobytes())
+        self.mvp.write((proj * lookat).astype('f4'))
         self.light.value = camera_pos
 
         crate_z = np.sin(self.crate_a * time + self.crate_b) * 0.2
         coordinates = np.dstack([self.crate_x, self.crate_y, crate_z])
 
-        self.instance_data.write(coordinates.astype('f4').tobytes())
+        self.instance_data.write(coordinates.astype('f4'))
         self.texture.use()
         self.vao.render(instances=1024)
 

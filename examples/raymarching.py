@@ -31,7 +31,7 @@ class Raymarching(Example):
         ]).astype(np.float32)
 
         content = [(
-            self.ctx.buffer(vertex_data.tobytes()),
+            self.ctx.buffer(vertex_data),
             '3f 2f',
             'in_vert', 'in_uv'
         )]
@@ -41,7 +41,7 @@ class Raymarching(Example):
             1, 2, 3
         ]).astype(np.int32)
 
-        idx_buffer = self.ctx.buffer(idx_data.tobytes())
+        idx_buffer = self.ctx.buffer(idx_data)
         self.vao = self.ctx.vertex_array(program, content, idx_buffer)
         self.u_time = program.get("T", 0.0)
 

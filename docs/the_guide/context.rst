@@ -50,7 +50,7 @@ Creating a headless context::
 
     import moderngl
     # Create the context
-    ctx = moderngl.create_context(headless=True)
+    ctx = moderngl.create_context(standalone=True)
     # Create a framebuffer we can render to
     fbo = ctx.simple_framebuffer((100, 100), 4)
     fbo.use()
@@ -80,7 +80,7 @@ A ``backend`` can be passed in for more advanced usage.
 
 For example: Making a headless EGL context on linux::
 
-    ctx = moderngl.create_context(headless=True, backend='egl')
+    ctx = moderngl.create_context(standalone=True, backend='egl')
 
 .. Note:: Each backend supports additional keyword arguments for
           more advanced configuration. This can for example be

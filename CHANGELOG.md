@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [5.6.1]
+
+## Improvements
+
+* Added `Context.cull_face`. (`glCullFace`). An alternative to `Context.front_face` (`glFrontFace`)
+* Added support for signed and unsigned integer sampler uniforms (`isampler*`, `usampler*`)
+* Added support for multisampled texture array samplers
+* Doc improvements
+
+## Bugs
+
+* Transform feedback with geo shader should now property set the out primitive type.
+  It incorrectly assumed `POINTS` in some cases causing a gl error.
+* Moderngl will now propagate the default error messages when objects cannot
+  be read using the buffer protocol.
+
 # [5.6.0] - 2020-02-01
 
 From ModernGL 5.6 context creation is done by the [glcontext](https://github.com/moderngl/glcontext)
@@ -539,6 +555,7 @@ For more information please see: [Differences between ModernGL5 and ModernGL4](h
 
 - It was a tool for me to develop games in python
 
+[5.6.1]: https://github.com/moderngl/moderngl/compare/5.6.0...5.6.1
 [5.6.0]: https://github.com/moderngl/moderngl/compare/5.5.4...5.6.0
 [5.5.4]: https://github.com/moderngl/moderngl/compare/5.5.3...5.5.4
 [5.5.3]: https://github.com/moderngl/moderngl/compare/5.5.2...5.5.3

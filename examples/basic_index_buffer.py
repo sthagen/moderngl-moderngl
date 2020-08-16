@@ -44,13 +44,13 @@ class IndexBuffer(Example):
 
             0.6, 0.8,
             -0.6, 0.8,
-        ])
+        ], dtype='f4')
 
-        # Indecies are given to specify the order of drawing
-        indecies = np.array([0, 1, 2, 0, 3, 4])
+        # Indices are given to specify the order of drawing
+        indices = np.array([0, 1, 2, 0, 3, 4], dtype='i4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
-        self.ibo = self.ctx.buffer(indecies.astype('i4').tobytes())
+        self.vbo = self.ctx.buffer(vertices)
+        self.ibo = self.ctx.buffer(indices)
 
         vao_content = [
             # 2 floats are assigned to the 'in' variable named 'in_vert' in the shader code

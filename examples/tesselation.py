@@ -83,7 +83,7 @@ class Tessellation(Example):
             [1.0, 0.0],
         ])
 
-        vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        vbo = self.ctx.buffer(vertices.astype('f4'))
         self.vao = self.ctx.simple_vertex_array(self.prog, vbo, 'in_pos')
 
     def render(self, time, frame_time):

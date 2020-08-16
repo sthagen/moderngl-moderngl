@@ -1,7 +1,18 @@
-"""Using pycairo with moderngl"""
+"""
+Using pycairo with moderngl.
+
+We simply create a screen aligned quad with texture coordinates
+to render the uploaded texture from cairo.
+
+Textures in OpenGL are stored "upside-down" so we build
+a vertex array with inverted y coordinates
+
+"""
 import math
+from array import array
 
 import cairo
+import moderngl
 from moderngl_window import geometry
 from ported._example import Example
 
@@ -13,7 +24,6 @@ class CairoExample(Example):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.texture = self.render_cairo_to_texture(512, 512)
-        self.quad_fs = geometry.quad_fs()
         self.prog = self.ctx.program(
             vertex_shader="""
             #version 330
@@ -35,10 +45,29 @@ class CairoExample(Example):
             }
             """,
         )
+        # Create a simple screen rectangle. The texture coordinates
+        # are reverted on the y axis here to make the cairo texture appear correctly.
+        vertices = [
+            # x, y | u, v
+            -1,  1,  0, 0,
+            -1, -1,  0, 1,
+             1,  1,  1, 0,
+             1, -1,  1, 1,
+        ]
+        self.screen_rectangle = self.ctx.vertex_array(
+            self.prog,
+            [
+                (
+                    self.ctx.buffer(array('f', vertices)),
+                    '2f 2f',
+                    'in_position', 'in_texcoord_0',
+                )
+            ],
+        )
 
     def render(self, time, frame_time):
         self.texture.use(location=0)
-        self.quad_fs.render(self.prog)
+        self.screen_rectangle.render(mode=moderngl.TRIANGLE_STRIP)
 
     def render_cairo_to_texture(self, width, height):
         # Draw with cairo to surface
@@ -51,6 +80,13 @@ class CairoExample(Example):
         ctx.fill_preserve()
         ctx.set_source_rgb(1, 1, 1)
         ctx.stroke()
+
+        ctx.move_to(20, 30)
+        ctx.select_font_face("Purisa", cairo.FONT_SLANT_NORMAL,
+                            cairo.FONT_WEIGHT_NORMAL)
+        ctx.set_font_size(13)
+        ctx.set_source_rgb(0.8, 0.8, 0.8)
+        ctx.show_text("Example Text")
         # Copy surface to texture
         return self.ctx.texture((width, height), 4, data=surface.get_data())
 

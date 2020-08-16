@@ -62,7 +62,7 @@ class MugExample(Example):
             (-23.844, 2.698, 44.493),
             (0.0, 0.0, 1.0),
         )
-        mvp = (proj * lookat).astype('f4').tobytes()
+        mvp = (proj * lookat).astype('f4')
         light = (-143.438, -159.072, 213.268)
         self.mug_prog['Mvp'].write(mvp)
         self.mug_prog['Light'].value = light

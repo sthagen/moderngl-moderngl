@@ -57,7 +57,7 @@ class InstancedRendering(Example):
             0.5, 0.5,
         ])
 
-        self.position_vertex_buffer = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.position_vertex_buffer = self.ctx.buffer(vertices.astype('f4'))
 
         # Vertex colors stored in color_buffer
         #
@@ -69,7 +69,7 @@ class InstancedRendering(Example):
             0.0, 0.0, 1.0,
             0.0, 0.0, 1.0,
         ])
-        self.color_buffer = self.ctx.buffer(colors.astype('f4').tobytes())
+        self.color_buffer = self.ctx.buffer(colors.astype('f4'))
 
         # (Per instance) positions and scales stored in pos_scale_buffer
         # There are 8 (x_position, y_position, scale) pairs
@@ -83,7 +83,7 @@ class InstancedRendering(Example):
             0.0, -0.5, 0.3,
             0.35, -0.35, 0.2,
         ])
-        self.pos_scale_buffer = self.ctx.buffer(position_scale.astype('f4').tobytes())
+        self.pos_scale_buffer = self.ctx.buffer(position_scale.astype('f4'))
 
         # Index buffer (also called element buffer)
         # There are 2 trianges to render
@@ -94,7 +94,7 @@ class InstancedRendering(Example):
             0, 1, 2,
             1, 2, 3
         ])
-        self.index_buffer = self.ctx.buffer(render_indicies.astype('i4').tobytes())
+        self.index_buffer = self.ctx.buffer(render_indicies.astype('i4'))
 
         # The vao_content is a list of 3-tuples (buffer, format, attribs)
         # the format can have an empty or '/v', '/i', '/r' ending.

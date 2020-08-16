@@ -49,9 +49,9 @@ class UniformsAndAttributes(Example):
             1.0, 0.0,
             -0.5, 0.86,
             -0.5, -0.86,
-        ])
+        ], dtype='f4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(vertices)
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'vert')
 
     def render(self, time: float, frame_time: float):

@@ -62,7 +62,7 @@ class Fractal(Example):
 
         vertices = np.array([-1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0])
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(vertices.astype('f4'))
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
 
     def render(self, time, frame_time):

@@ -102,7 +102,7 @@ class ColorsAndTexture(Example):
         self.use_texture.value = False
 
         self.light.value = (67.69, -8.14, 52.49)
-        self.mvp.write((proj * lookat * rotate).astype('f4').tobytes())
+        self.mvp.write((proj * lookat * rotate).astype('f4'))
 
         self.color.value = (0.67, 0.49, 0.29)
         self.vao_ground.render()

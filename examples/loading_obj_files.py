@@ -84,7 +84,7 @@ class LoadingOBJ(Example):
 
         self.light.value = (-140.0, -300.0, 350.0)
         self.color.value = (1.0, 1.0, 1.0, 0.25)
-        self.mvp.write((proj * lookat).astype('f4').tobytes())
+        self.mvp.write((proj * lookat).astype('f4'))
 
         self.texture.use()
         self.vao.render()

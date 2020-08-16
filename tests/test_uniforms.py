@@ -1,6 +1,8 @@
+from array import array
 import struct
 import unittest
 
+import moderngl
 from common import get_context
 
 
@@ -119,6 +121,97 @@ class TestCase(unittest.TestCase):
         self.assertAlmostEqual(m[3], 3.0)
         self.assertAlmostEqual(m[4], 4.0)
         self.assertAlmostEqual(m[5], 5.0)
+
+    def test_sampler_2d(self):
+        """RGBA8 2d sampler"""
+        prog = self.ctx.program(vertex_shader="""
+            #version 330
+            uniform sampler2D tex;
+            out float color;
+            void main() {
+                color = texelFetch(tex, ivec2(gl_VertexID, 0), 0).r;
+            }
+            """,
+            varyings=['color',],
+        )
+        tex = self.ctx.texture((4, 1), 1, data=array('B', [127, 0, 255, 64]), dtype='f1')
+        buff = self.ctx.buffer(reserve=4 * 4)
+        vao = self.ctx.vertex_array(prog, [])
+        tex.use(0)
+        vao.transform(buff, vertices=4)
+        data = struct.unpack('4f', buff.read())
+        self.assertAlmostEqual(data[0], 0.498, places=2)
+        self.assertAlmostEqual(data[1], 0.0)
+        self.assertAlmostEqual(data[2], 1.0)
+        self.assertAlmostEqual(data[3], 0.25, places=2)
+
+    def test_sampler_2d_int(self):
+        prog = self.ctx.program(vertex_shader="""
+            #version 330
+            uniform isampler2D tex;
+            out int color;
+            void main() {
+                color = texelFetch(tex, ivec2(gl_VertexID, 0), 0).r;
+            }
+            """,
+            varyings=['color',],
+        )
+        tex = self.ctx.texture((4, 1), 1, data=array('i', [-1, 0, 1000, 4353454]), dtype='i4')
+        buff = self.ctx.buffer(reserve=4 * 4)
+        vao = self.ctx.vertex_array(prog, [])
+        tex.use(0)
+        vao.transform(buff, vertices=4)
+        data = struct.unpack('4i', buff.read())
+        self.assertEqual(data[0], -1)
+        self.assertEqual(data[1], 0)
+        self.assertEqual(data[2], 1000)
+        self.assertEqual(data[3], 4353454)
+
+    def test_sampler_2d_uint(self):
+        prog = self.ctx.program(vertex_shader="""
+            #version 330
+            uniform usampler2D tex;
+            out uint color;
+            void main() {
+                color = texelFetch(tex, ivec2(gl_VertexID, 0), 0).r;
+            }
+            """,
+            varyings=['color',],
+        )
+        tex = self.ctx.texture((4, 1), 1, data=array('I', [0, 500, 1000, 4353454]), dtype='u4')
+        buff = self.ctx.buffer(reserve=4 * 4)
+        vao = self.ctx.vertex_array(prog, [])
+        tex.use(0)
+        vao.transform(buff, vertices=4)
+        data = struct.unpack('4I', buff.read())
+        print(data)
+        self.assertEqual(data[0], 0)
+        self.assertEqual(data[1], 500)
+        self.assertEqual(data[2], 1000)
+        self.assertEqual(data[3], 4353454)
+
+    def test_sampler_2d_array(self):
+        """RGBA8 2d array sampler. Read two pixels from two different layers"""
+        prog = self.ctx.program(vertex_shader="""
+            #version 330
+            uniform sampler2DArray tex;
+            out float color;
+            void main() {
+                color = texelFetch(tex, ivec3(gl_VertexID % 2, 0, gl_VertexID / 2), 0).r;
+            }
+            """,
+            varyings=['color',],
+        )
+        tex = self.ctx.texture_array((2, 1, 2), 1, data=array('B', [127, 0, 255, 64]), dtype='f1')
+        buff = self.ctx.buffer(reserve=4 * 4)
+        vao = self.ctx.vertex_array(prog, [])
+        tex.use(0)
+        vao.transform(buff, vertices=4)
+        data = struct.unpack('4f', buff.read())
+        self.assertAlmostEqual(data[0], 0.498, places=2)
+        self.assertAlmostEqual(data[1], 0.0)
+        self.assertAlmostEqual(data[2], 1.0)
+        self.assertAlmostEqual(data[3], 0.25, places=2)
 
 
 if __name__ == '__main__':

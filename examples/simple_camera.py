@@ -149,7 +149,7 @@ class PerspectiveProjection(Example):
 
         self.camera = Camera(self.aspect_ratio)
         self.mvp = self.prog['Mvp']
-        self.vbo = self.ctx.buffer(grid(15, 10).astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(grid(15, 10).astype('f4'))
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'in_vert')
 
         self.states = {
@@ -212,7 +212,7 @@ class PerspectiveProjection(Example):
         self.ctx.clear(1.0, 1.0, 1.0)
         self.ctx.enable(moderngl.DEPTH_TEST)
 
-        self.mvp.write((self.camera.mat_projection * self.camera.mat_lookat).astype('f4').tobytes())
+        self.mvp.write((self.camera.mat_projection * self.camera.mat_lookat).astype('f4'))
         self.vao.render(moderngl.LINES)
 
 

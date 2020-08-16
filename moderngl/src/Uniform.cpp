@@ -35,7 +35,7 @@ int MGLUniform_set_data(MGLUniform * self, PyObject * value, void * closure) {
 
 	int get_buffer = PyObject_GetBuffer(value, &buffer_view, PyBUF_SIMPLE);
 	if (get_buffer < 0) {
-		// Propagate error from the objects own getbuffer method
+		// Propagate the default error
 		return -1;
 	}
 
@@ -416,6 +416,8 @@ void MGLUniform_Complete(MGLUniform * self, const GLMethods & gl) {
 			break;
 
 		case GL_SAMPLER_2D:
+		case GL_INT_SAMPLER_2D:
+		case GL_UNSIGNED_INT_SAMPLER_2D:
 			self->matrix = false;
 			self->dimension = 1;
 			self->element_size = 4;
@@ -431,6 +433,8 @@ void MGLUniform_Complete(MGLUniform * self, const GLMethods & gl) {
 			break;
 
 		case GL_SAMPLER_2D_ARRAY:
+		case GL_INT_SAMPLER_2D_ARRAY:
+		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
 			self->matrix = false;
 			self->dimension = 1;
 			self->element_size = 4;
@@ -446,6 +450,8 @@ void MGLUniform_Complete(MGLUniform * self, const GLMethods & gl) {
 			break;
 
 		case GL_SAMPLER_3D:
+		case GL_INT_SAMPLER_3D:
+		case GL_UNSIGNED_INT_SAMPLER_3D:
 			self->matrix = false;
 			self->dimension = 1;
 			self->element_size = 4;
@@ -476,6 +482,25 @@ void MGLUniform_Complete(MGLUniform * self, const GLMethods & gl) {
 			break;
 
 		case GL_SAMPLER_2D_MULTISAMPLE:
+		case GL_INT_SAMPLER_2D_MULTISAMPLE:
+		case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
+			self->matrix = false;
+			self->dimension = 1;
+			self->element_size = 4;
+			self->gl_value_reader_proc = (MGLProc)gl.GetUniformiv;
+			self->gl_value_writer_proc = (MGLProc)gl.ProgramUniform1iv;
+			if (self->array_length > 1) {
+				self->value_getter = (MGLProc)MGLUniform_sampler_array_value_getter;
+				self->value_setter = (MGLProc)MGLUniform_sampler_array_value_setter;
+			} else {
+				self->value_getter = (MGLProc)MGLUniform_sampler_value_getter;
+				self->value_setter = (MGLProc)MGLUniform_sampler_value_setter;
+			}
+			break;
+
+		case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:
+		case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+		case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
 			self->matrix = false;
 			self->dimension = 1;
 			self->element_size = 4;
@@ -491,6 +516,8 @@ void MGLUniform_Complete(MGLUniform * self, const GLMethods & gl) {
 			break;
 
 		case GL_SAMPLER_CUBE:
+		case GL_INT_SAMPLER_CUBE:
+		case GL_UNSIGNED_INT_SAMPLER_CUBE:
 			self->matrix = false;
 			self->dimension = 1;
 			self->element_size = 4;

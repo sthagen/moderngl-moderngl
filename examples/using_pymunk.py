@@ -75,7 +75,7 @@ class PymunkExample(Example):
             1.0, 1.0, 1.0, 1.0,
         ])
 
-        vbo1 = self.ctx.buffer(vertices.astype('f4').tobytes())
+        vbo1 = self.ctx.buffer(vertices.astype('f4'))
 
         self.vbo2 = self.ctx.buffer(reserve=1024 * 1024)
 
@@ -140,14 +140,14 @@ class PymunkExample(Example):
         self.prog['Camera'].value = (200, 300, width / 2, height / 2)
 
         bodies = np.array([(b.position.x, b.position.y, b.angle, 10, 10, 1, 1, 1, 0) for b in self.bodies], dtype='f4')
-        self.vbo2.write(bodies.tobytes())
+        self.vbo2.write(bodies)
         self.prog['Texture'].value = 0
         self.vao.render(moderngl.TRIANGLE_STRIP, instances=len(self.bodies))
 
         self.vbo2.orphan()
 
         balls = np.array([(b.position.x, b.position.y, b.angle, 15, 15, 1, 1, 1, 0) for b in self.balls], dtype='f4')
-        self.vbo2.write(balls.tobytes())
+        self.vbo2.write(balls)
         self.prog['Texture'].value = 1
         self.vao.render(moderngl.TRIANGLE_STRIP, instances=len(self.balls))
 

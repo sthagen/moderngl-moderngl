@@ -1,5 +1,5 @@
 '''
-    ModernGL: PyOpenGL alternative
+    ModernGL: High performance rendering for Python 3
 '''
 
 from .error import *
@@ -20,4 +20,4 @@ from .texture_cube import *
 from .vertex_array import *
 from .sampler import *
 
-__version__ = '5.6.0'
+__version__ = '5.6.1'

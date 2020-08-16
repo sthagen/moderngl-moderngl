@@ -58,9 +58,9 @@ class AlphaBlending(Example):
 
             -0.5, -0.86,
             0.0, 0.0, 1.0, 0.5,
-        ])
+        ], dtype='f4')
 
-        self.vbo = self.ctx.buffer(vertices.astype('f4').tobytes())
+        self.vbo = self.ctx.buffer(vertices)
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, 'vert', 'vert_color')
 
     def render(self, time: float, frame_time: float):
