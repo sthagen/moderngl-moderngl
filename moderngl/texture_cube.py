@@ -141,7 +141,7 @@ class TextureCube:
 
     def read(self, face, *, alignment=1) -> bytes:
         '''
-            Read a face from the cubemap texture.
+            Read a face from the cubemap as bytes into system memory.
 
             Args:
                 face (int): The face to read.
@@ -155,6 +155,20 @@ class TextureCube:
     def read_into(self, buffer, face, *, alignment=1, write_offset=0) -> None:
         '''
             Read a face from the cubemap texture.
+
+            Read a face of the cubemap into a bytearray or :py:class:`~moderngl.Buffer`.
+            The advantage of reading into a :py:class:`~moderngl.Buffer` is that pixel data
+            does not need to travel all the way to system memory::
+
+                # Reading pixel data into a bytearray
+                data = bytearray(4)
+                texture = ctx.texture_cube((2, 2), 1)
+                texture.read_into(data, 0)
+
+                # Reading pixel data into a buffer
+                data = ctx.buffer(reserve=4)
+                texture = ctx.texture_cube((2, 2), 1)
+                texture.read_into(data, 0)
 
             Args:
                 buffer (bytearray): The buffer that will receive the pixels.
@@ -173,6 +187,19 @@ class TextureCube:
     def write(self, face, data, viewport=None, *, alignment=1) -> None:
         '''
             Update the content of the texture.
+
+            Update the content of a face in the cubemap from byte data
+            or a moderngl :py:class:`~moderngl.Buffer`::
+
+                # Write data from a moderngl Buffer
+                data = ctx.buffer(reserve=4)
+                texture = ctx.texture_cube((2, 2), 1)
+                texture.write(0, data)
+
+                # Write data from bytes
+                data = b'\xff\xff\xff\xff' 
+                texture = ctx.texture_cube((2, 2), 1)
+                texture.write(0, data)
 
             Args:
                 face (int): The face to update.

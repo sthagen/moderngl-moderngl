@@ -200,7 +200,7 @@ class Texture3D:
 
     def read(self, *, alignment=1) -> bytes:
         '''
-            Read the content of the texture into a buffer.
+            Read the pixel data as bytes into system memory.
 
             Keyword Args:
                 alignment (int): The byte alignment of the pixels.
@@ -213,10 +213,22 @@ class Texture3D:
 
     def read_into(self, buffer, *, alignment=1, write_offset=0) -> None:
         '''
-            Read the content of the texture into a buffer.
+            Read the content of the texture into a bytearray or :py:class:`~moderngl.Buffer`.
+            The advantage of reading into a :py:class:`~moderngl.Buffer` is that pixel data
+            does not need to travel all the way to system memory::
+
+                # Reading pixel data into a bytearray
+                data = bytearray(8)
+                texture = ctx.texture3d((2, 2, 2), 1)
+                texture.read_into(data)
+
+                # Reading pixel data into a buffer
+                data = ctx.buffer(reserve=8)
+                texture = ctx.texture3d((2, 2), 1)
+                texture.read_into(data)
 
             Args:
-                buffer (bytearray): The buffer that will receive the pixels.
+                buffer (Union[bytearray, Buffer]): The buffer that will receive the pixels.
 
             Keyword Args:
                 alignment (int): The byte alignment of the pixels.
@@ -230,7 +242,18 @@ class Texture3D:
 
     def write(self, data, viewport=None, *, alignment=1) -> None:
         '''
-            Update the content of the texture.
+            Update the content of the texture from byte data
+            or a moderngl :py:class:`~moderngl.Buffer`::
+
+                # Write data from a moderngl Buffer
+                data = ctx.buffer(reserve=8)
+                texture = ctx.texture3d((2, 2, 2), 1)
+                texture.write(data)
+
+                # Write data from bytes
+                data = b'\xff\xff\xff\xff\xff\xff\xff\xff'
+                texture = ctx.texture3d((2, 2), 1)
+                texture.write(data)
 
             Args:
                 data (bytes): The pixel data.

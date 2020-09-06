@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# 5.6.2
+
+## Bugs
+
+* `TextureArray.build_mimpmaps()` used the wrong target when building mipmaps.
+  This caused the texture to corrupt with some drivers. Thanks to [Nir Aides](https://github.com/nir)
+  for discovering this bug.
+
+
 # [5.6.1]
 
 ## Improvements

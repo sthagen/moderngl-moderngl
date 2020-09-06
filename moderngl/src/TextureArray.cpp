@@ -447,15 +447,15 @@ PyObject * MGLTextureArray_build_mipmaps(MGLTextureArray * self, PyObject * args
 	const GLMethods & gl = self->context->gl;
 
 	gl.ActiveTexture(GL_TEXTURE0 + self->context->default_texture_unit);
-	gl.BindTexture(GL_TEXTURE_3D, self->texture_obj);
+	gl.BindTexture(GL_TEXTURE_2D_ARRAY, self->texture_obj);
 
-	gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, base);
-	gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, max);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, base);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, max);
 
-	gl.GenerateMipmap(GL_TEXTURE_3D);
+	gl.GenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
-	gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	self->min_filter = GL_LINEAR_MIPMAP_LINEAR;
 	self->mag_filter = GL_LINEAR;

@@ -209,7 +209,7 @@ class TextureArray:
 
     def read(self, *, alignment=1) -> bytes:
         '''
-            Read the content of the texture array into a buffer.
+            Read the pixel data as bytes into system memory.
 
             Keyword Args:
                 alignment (int): The byte alignment of the pixels.
@@ -222,10 +222,22 @@ class TextureArray:
 
     def read_into(self, buffer, *, alignment=1, write_offset=0) -> None:
         '''
-            Read the content of the texture array into a buffer.
+            Read the content of the texture array into a bytearray or :py:class:`~moderngl.Buffer`.
+            The advantage of reading into a :py:class:`~moderngl.Buffer` is that pixel data
+            does not need to travel all the way to system memory::
+
+                # Reading pixel data into a bytearray
+                data = bytearray(8)
+                texture = ctx.texture((2, 2, 2), 1)
+                texture.read_into(data)
+
+                # Reading pixel data into a buffer
+                data = ctx.buffer(reserve=8)
+                texture = ctx.texture((2, 2, 2), 1)
+                texture.read_into(data)
 
             Args:
-                buffer (bytearray): The buffer that will receive the pixels.
+                buffer (Union[bytearray, Buffer]): The buffer that will receive the pixels.
 
             Keyword Args:
                 alignment (int): The byte alignment of the pixels.
@@ -239,7 +251,30 @@ class TextureArray:
 
     def write(self, data, viewport=None, *, alignment=1) -> None:
         '''
-            Update the content of the texture array.
+            Update the content of the texture array from byte data
+            or a moderngl :py:class:`~moderngl.Buffer`.
+
+            The ``viewport`` can be used for finer control of where the
+            data should be written in the array. The valid versions are::
+
+                # Writing multiple layers from the begining of the texture
+                texture.write(data, viewport=(width, hight, num_layers))
+
+                # Writing sub-sections of the array
+                texture.write(data, viewport=(x, y, layer, width, height, num_layers))
+
+            Like with other texture types we can also use bytes or :py:class:`~moderngl.Buffer`
+            as a source::
+
+                # Using a moderngl buffer
+                data = ctx.buffer(reserve=8)
+                texture = ctx.texture_array((2, 2, 2), 1)
+                texture.write(data)
+
+                # Using byte data from system memory
+                data = b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                texture = ctx.texture_array((2, 2, 2), 1)
+                texture.write(data)
 
             Args:
                 data (bytes): The pixel data.
