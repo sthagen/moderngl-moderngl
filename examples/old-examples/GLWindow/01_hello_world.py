@@ -1,52 +1,56 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
 
-# Window & Context
+# import GLWindow
+# import ModernGL
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# # Window & Context
 
-# Shaders & Program
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# # Shaders & Program
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
 
-        out vec4 color;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(0.3, 0.5, 1.0, 1.0);
-        }
-    '''),
-])
+#         out vec4 color;
 
-# Buffer
+#         void main() {
+#             color = vec4(0.3, 0.5, 1.0, 1.0);
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '6f',
-    0.0, 0.8,
-    -0.6, -0.8,
-    0.6, -0.8,
-))
+# # Buffer
 
-# Put everything together
+# vbo = ctx.buffer(struct.pack(
+#     '6f',
+#     0.0, 0.8,
+#     -0.6, -0.8,
+#     0.6, -0.8,
+# ))
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+# # Put everything together
 
-# Main loop
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    vao.render()
+# # Main loop
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     vao.render()

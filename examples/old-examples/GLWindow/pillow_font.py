@@ -1,82 +1,86 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
-from PIL import Image, ImageDraw, ImageFont
+# import struct
 
-# Window & Context
+# import GLWindow
+# import ModernGL
+# from PIL import Image, ImageDraw, ImageFont
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# # Window & Context
 
-# Using Pillow to create a Texture
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-font = ImageFont.truetype('../data/OpenSans-Regular.ttf', 120)
+# # Using Pillow to create a Texture
 
-msg = 'Hello World!'
-msg_size = font.getsize(msg)
+# font = ImageFont.truetype('../data/OpenSans-Regular.ttf', 120)
 
-im = Image.new('RGBA', msg_size, (0, 0, 0, 0))
+# msg = 'Hello World!'
+# msg_size = font.getsize(msg)
 
-draw = ImageDraw.Draw(im)
-draw.text((1, 0), msg, font=font, fill=(0, 0, 0, 255))
-del draw
+# im = Image.new('RGBA', msg_size, (0, 0, 0, 0))
 
-tex = ctx.texture(im.size, 4, im.tobytes())
-tex.use()
+# draw = ImageDraw.Draw(im)
+# draw.text((1, 0), msg, font=font, fill=(0, 0, 0, 255))
+# del draw
 
-# Shaders & Program
+# tex = ctx.texture(im.size, 4, im.tobytes())
+# tex.use()
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# # Shaders & Program
 
-        uniform vec2 Screen;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec2 vert;
-        in vec2 texcoord;
+#         uniform vec2 Screen;
 
-        out vec2 v_texcoord;
+#         in vec2 vert;
+#         in vec2 texcoord;
 
-        void main() {
-            gl_Position = vec4(vert / Screen * 2.0 - 1.0, 0.0, 1.0);
-            v_texcoord = texcoord;
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         out vec2 v_texcoord;
 
-        uniform sampler2D Texture;
+#         void main() {
+#             gl_Position = vec4(vert / Screen * 2.0 - 1.0, 0.0, 1.0);
+#             v_texcoord = texcoord;
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        in vec2 v_texcoord;
-        out vec4 color;
+#         uniform sampler2D Texture;
 
-        void main() {
-            color = texture(Texture, v_texcoord);
-        }
-    '''),
-])
+#         in vec2 v_texcoord;
+#         out vec4 color;
 
-prog.uniforms['Screen'].value = wnd.size
+#         void main() {
+#             color = texture(Texture, v_texcoord);
+#         }
+#     '''),
+# ])
 
-# Buffer
+# prog.uniforms['Screen'].value = wnd.size
 
-vbo = ctx.buffer(struct.pack(
-    '16f',
-    0, 0, 0, 0,
-    0, msg_size[1], 0, -1,
-    msg_size[0], 0, 1, 0,
-    msg_size[0], msg_size[1], 1, -1,
-))
+# # Buffer
 
-# Put everything together
+# vbo = ctx.buffer(struct.pack(
+#     '16f',
+#     0, 0, 0, 0,
+#     0, msg_size[1], 0, -1,
+#     msg_size[0], 0, 1, 0,
+#     msg_size[0], msg_size[1], 1, -1,
+# ))
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'texcoord'])
+# # Put everything together
 
-# Main loop
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'texcoord'])
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    ctx.enable(ModernGL.BLEND)
-    vao.render(ModernGL.TRIANGLE_STRIP)
+# # Main loop
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     ctx.enable(ModernGL.BLEND)
+#     vao.render(ModernGL.TRIANGLE_STRIP)

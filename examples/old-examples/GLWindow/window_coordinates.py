@@ -1,53 +1,57 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# import GLWindow
+# import ModernGL
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-        uniform vec2 WindowSize;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec2 in_vert;
-        in vec3 in_color;
+#         uniform vec2 WindowSize;
 
-        out vec3 v_color;
+#         in vec2 in_vert;
+#         in vec3 in_color;
 
-        void main() {
-            v_color = in_color;
-            gl_Position = vec4(in_vert / WindowSize * 2.0, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         out vec3 v_color;
 
-        in vec3 v_color;
-        out vec4 f_color;
+#         void main() {
+#             v_color = in_color;
+#             gl_Position = vec4(in_vert / WindowSize * 2.0, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            f_color = vec4(v_color, 1.0);
-        }
-    '''),
-])
+#         in vec3 v_color;
+#         out vec4 f_color;
 
-window_size = prog.uniforms['WindowSize']
+#         void main() {
+#             f_color = vec4(v_color, 1.0);
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '15f',
-    0.0, 100.0, 1.0, 0.0, 0.0,
-    -86.0, -50.0, 0.0, 1.0, 0.0,
-    86.0, -50.0, 0.0, 0.0, 1.0,
-))
+# window_size = prog.uniforms['WindowSize']
 
-vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
+# vbo = ctx.buffer(struct.pack(
+#     '15f',
+#     0.0, 100.0, 1.0, 0.0, 0.0,
+#     -86.0, -50.0, 0.0, 1.0, 0.0,
+#     86.0, -50.0, 0.0, 0.0, 1.0,
+# ))
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    ctx.enable(ModernGL.BLEND)
-    window_size.value = wnd.size
-    vao.render()
+# vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     ctx.enable(ModernGL.BLEND)
+#     window_size.value = wnd.size
+#     vao.render()

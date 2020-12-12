@@ -1,63 +1,67 @@
-import struct
-import random
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
+# import random
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# import GLWindow
+# import ModernGL
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
-        in vec3 tex_coord;
-        out vec3 v_tex_coord;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-            v_tex_coord = tex_coord;
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
+#         in vec3 tex_coord;
+#         out vec3 v_tex_coord;
 
-        uniform sampler3D Texture;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#             v_tex_coord = tex_coord;
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        in vec3 v_tex_coord;
-        out vec4 color;
+#         uniform sampler3D Texture;
 
-        void main() {
-            color = vec4(texture(Texture, v_tex_coord).rgb, 1.0);
-        }
-    '''),
-])
+#         in vec3 v_tex_coord;
+#         out vec4 color;
 
-data = bytes()
+#         void main() {
+#             color = vec4(texture(Texture, v_tex_coord).rgb, 1.0);
+#         }
+#     '''),
+# ])
 
-for i in range(11):
-    data += struct.pack('5f', i / 10.0 - 0.5, 0.2, random.random(), random.random(), random.random())
-    data += struct.pack('5f', i / 10.0 - 0.5, -0.2, random.random(), random.random(), random.random())
+# data = bytes()
 
-vbo = ctx.buffer(data)
+# for i in range(11):
+#     data += struct.pack('5f', i / 10.0 - 0.5, 0.2, random.random(), random.random(), random.random())
+#     data += struct.pack('5f', i / 10.0 - 0.5, -0.2, random.random(), random.random(), random.random())
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'tex_coord'])
+# vbo = ctx.buffer(data)
 
-pixels = bytes()
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'tex_coord'])
 
-for i in range(4):
-    for j in range(4):
-        for k in range(4):
-            r = int(i * 255 / 3)
-            g = int(j * 255 / 3)
-            b = int(k * 255 / 3)
-            pixels += struct.pack('3B', r, g, b)
+# pixels = bytes()
 
-texture = ctx.texture3d((4, 4, 4), 3, pixels)
-texture.use()
+# for i in range(4):
+#     for j in range(4):
+#         for k in range(4):
+#             r = int(i * 255 / 3)
+#             g = int(j * 255 / 3)
+#             b = int(k * 255 / 3)
+#             pixels += struct.pack('3B', r, g, b)
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    vao.render(ModernGL.TRIANGLE_STRIP)
+# texture = ctx.texture3d((4, 4, 4), 3, pixels)
+# texture.use()
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     vao.render(ModernGL.TRIANGLE_STRIP)

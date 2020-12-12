@@ -1,60 +1,64 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-from PIL import Image
+# import struct
 
-# Context
+# import ModernGL
+# from PIL import Image
 
-ctx = ModernGL.create_standalone_context()
+# # Context
 
-# Framebuffer
+# ctx = ModernGL.create_standalone_context()
 
-size = (512, 512)
-color_rbo = ctx.renderbuffer(size)
-depth_rbo = ctx.depth_renderbuffer(size)
-fbo = ctx.framebuffer(color_rbo, depth_rbo)
+# # Framebuffer
 
-fbo.use()
+# size = (512, 512)
+# color_rbo = ctx.renderbuffer(size)
+# depth_rbo = ctx.depth_renderbuffer(size)
+# fbo = ctx.framebuffer(color_rbo, depth_rbo)
 
-# Shaders & Program
+# fbo.use()
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# # Shaders & Program
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
 
-        out vec4 color;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(0.3, 0.5, 1.0, 1.0);
-        }
-    '''),
-])
+#         out vec4 color;
 
-# Buffer
+#         void main() {
+#             color = vec4(0.3, 0.5, 1.0, 1.0);
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '6f',
-    0.0, 0.8,
-    -0.6, -0.8,
-    0.6, -0.8,
-))
+# # Buffer
 
-# Put everything together
+# vbo = ctx.buffer(struct.pack(
+#     '6f',
+#     0.0, 0.8,
+#     -0.6, -0.8,
+#     0.6, -0.8,
+# ))
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+# # Put everything together
 
-ctx.clear(0.9, 0.9, 0.9)
-vao.render()
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
-img = Image.frombytes('RGB', size, fbo.read())
-img = img.transpose(Image.FLIP_TOP_BOTTOM)
-img.save('01_hello_world.png')
+# ctx.clear(0.9, 0.9, 0.9)
+# vao.render()
+
+# img = Image.frombytes('RGB', size, fbo.read())
+# img = img.transpose(Image.FLIP_TOP_BOTTOM)
+# img.save('01_hello_world.png')

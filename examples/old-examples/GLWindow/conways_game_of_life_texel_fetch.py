@@ -1,105 +1,109 @@
-import struct
-import numpy
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
+# import numpy
 
-# This example is not working with NPOT Textures
+# import GLWindow
+# import ModernGL
 
-width, height = 640, 460
+# # This example is not working with NPOT Textures
 
-pixels = numpy.round(numpy.random.rand(width, height)).astype('float32')
-grid = numpy.dstack(numpy.mgrid[0:height, 0:width][::-1]).astype('int32')
+# width, height = 640, 460
 
-wnd = GLWindow.create_window(width, height)
-ctx = ModernGL.create_context()
+# pixels = numpy.round(numpy.random.rand(width, height)).astype('float32')
+# grid = numpy.dstack(numpy.mgrid[0:height, 0:width][::-1]).astype('int32')
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = GLWindow.create_window(width, height)
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
-        out vec2 text;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            text = vert;
-            gl_Position = vec4((vert * 2.0 - 1.0) * 1, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
+#         out vec2 text;
 
-        uniform sampler2D Texture;
+#         void main() {
+#             text = vert;
+#             gl_Position = vec4((vert * 2.0 - 1.0) * 1, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        in vec2 text;
-        out vec4 color;
+#         uniform sampler2D Texture;
 
-        void main() {
-            color = texture(Texture, text);
-        }
-    '''),
-])
+#         in vec2 text;
+#         out vec4 color;
 
-trans = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+#         void main() {
+#             color = texture(Texture, text);
+#         }
+#     '''),
+# ])
 
-        uniform sampler2D Texture;
-        uniform int Width;
-        uniform int Height;
+# trans = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in ivec2 text;
-        out float vert;
+#         uniform sampler2D Texture;
+#         uniform int Width;
+#         uniform int Height;
 
-        #define LIVING 0.0
-        #define DEAD 1.0
+#         in ivec2 text;
+#         out float vert;
 
-        bool cell(int x, int y) {
-            return texelFetch(Texture, ivec2((x + Width) % Width, (y + Height) % Height), 0).r < 0.5;
-        }
+#         #define LIVING 0.0
+#         #define DEAD 1.0
 
-        void main() {
-            bool living = cell(text.x, text.y);
+#         bool cell(int x, int y) {
+#             return texelFetch(Texture, ivec2((x + Width) % Width, (y + Height) % Height), 0).r < 0.5;
+#         }
 
-            int neighbours = 0;
-            if (cell(text.x - 1, text.y - 1)) neighbours++;
-            if (cell(text.x - 1, text.y + 0)) neighbours++;
-            if (cell(text.x - 1, text.y + 1)) neighbours++;
-            if (cell(text.x + 1, text.y - 1)) neighbours++;
-            if (cell(text.x + 1, text.y + 0)) neighbours++;
-            if (cell(text.x + 1, text.y + 1)) neighbours++;
-            if (cell(text.x + 0, text.y + 1)) neighbours++;
-            if (cell(text.x + 0, text.y - 1)) neighbours++;
+#         void main() {
+#             bool living = cell(text.x, text.y);
 
-            if (living) {
-                vert = (neighbours == 2 || neighbours == 3) ? LIVING : DEAD;
-            } else {
-                vert = (neighbours == 3) ? LIVING : DEAD;
-            }
-        }
-    '''),
-    varyings=['vert']
-)
+#             int neighbours = 0;
+#             if (cell(text.x - 1, text.y - 1)) neighbours++;
+#             if (cell(text.x - 1, text.y + 0)) neighbours++;
+#             if (cell(text.x - 1, text.y + 1)) neighbours++;
+#             if (cell(text.x + 1, text.y - 1)) neighbours++;
+#             if (cell(text.x + 1, text.y + 0)) neighbours++;
+#             if (cell(text.x + 1, text.y + 1)) neighbours++;
+#             if (cell(text.x + 0, text.y + 1)) neighbours++;
+#             if (cell(text.x + 0, text.y - 1)) neighbours++;
 
-trans.uniforms['Width'].value = width
-trans.uniforms['Height'].value = height
+#             if (living) {
+#                 vert = (neighbours == 2 || neighbours == 3) ? LIVING : DEAD;
+#             } else {
+#                 vert = (neighbours == 3) ? LIVING : DEAD;
+#             }
+#         }
+#     '''),
+#     varyings=['vert']
+# )
 
-texture = ctx.texture((width, height), 1, pixels.tobytes(), floats=True)
-texture.filter = ModernGL.NEAREST
-texture.swizzle = 'RRR1'
-texture.use()
+# trans.uniforms['Width'].value = width
+# trans.uniforms['Height'].value = height
 
-vbo = ctx.buffer(struct.pack('8f', 0, 0, 0, 1, 1, 0, 1, 1))
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+# texture = ctx.texture((width, height), 1, pixels.tobytes(), floats=True)
+# texture.filter = ModernGL.NEAREST
+# texture.swizzle = 'RRR1'
+# texture.use()
 
-text = ctx.buffer(grid.tobytes())
-tao = ctx.simple_vertex_array(trans, text, ['text'])
-pbo = ctx.buffer(reserve=pixels.nbytes)
+# vbo = ctx.buffer(struct.pack('8f', 0, 0, 0, 1, 1, 0, 1, 1))
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
+# text = ctx.buffer(grid.tobytes())
+# tao = ctx.simple_vertex_array(trans, text, ['text'])
+# pbo = ctx.buffer(reserve=pixels.nbytes)
 
-    tao.transform(pbo)
-    texture.write(pbo)
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
 
-    vao.render(ModernGL.TRIANGLE_STRIP)
+#     tao.transform(pbo)
+#     texture.write(pbo)
+
+#     vao.render(ModernGL.TRIANGLE_STRIP)

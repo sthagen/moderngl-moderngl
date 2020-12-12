@@ -1,67 +1,71 @@
-import struct
-import tkinter as tk
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-import ModernGL.tk
+# import struct
+# import tkinter as tk
 
-ctx = ModernGL.create_standalone_context()
+# import ModernGL
+# import ModernGL.tk
 
-fbo = ctx.framebuffer(ctx.renderbuffer((512, 512)))
+# ctx = ModernGL.create_standalone_context()
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# fbo = ctx.framebuffer(ctx.renderbuffer((512, 512)))
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
 
-        uniform float R;
-        uniform float G;
-        uniform float B;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        out vec4 color;
+#         uniform float R;
+#         uniform float G;
+#         uniform float B;
 
-        void main() {
-            color = vec4(B, G, R, 1.0);
-        }
-    '''),
-])
+#         out vec4 color;
 
-vbo = ctx.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+#         void main() {
+#             color = vec4(B, G, R, 1.0);
+#         }
+#     '''),
+# ])
 
-root = tk.Tk()
-frame = ModernGL.tk.ModernGLCanvas(root, 512, 512)
-frame.pack()
+# vbo = ctx.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
-
-def redraw(name, value):
-    prog.uniforms[name].value = value
-
-    fbo.use()
-    fbo.clear(0.94, 0.94, 0.94)
-    vao.render()
-
-    fbo.read_into(frame.pixels)
-    frame.update()
+# root = tk.Tk()
+# frame = ModernGL.tk.ModernGLCanvas(root, 512, 512)
+# frame.pack()
 
 
-R = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('R', int(x) / 255), length=300)
-G = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('G', int(x) / 255), length=300)
-B = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('B', int(x) / 255), length=300)
+# def redraw(name, value):
+#     prog.uniforms[name].value = value
 
-R.pack()
-G.pack()
-B.pack()
+#     fbo.use()
+#     fbo.clear(0.94, 0.94, 0.94)
+#     vao.render()
 
-R.set(30)
-G.set(80)
-B.set(200)
+#     fbo.read_into(frame.pixels)
+#     frame.update()
 
-root.mainloop()
+
+# R = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('R', int(x) / 255), length=300)
+# G = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('G', int(x) / 255), length=300)
+# B = tk.Scale(root, from_=0, to=255, orient=tk.HORIZONTAL, command=lambda x: redraw('B', int(x) / 255), length=300)
+
+# R.pack()
+# G.pack()
+# B.pack()
+
+# R.set(30)
+# G.set(80)
+# B.set(200)
+
+# root.mainloop()

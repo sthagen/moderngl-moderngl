@@ -1,70 +1,74 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-import pyglet
+# import struct
 
-wnd = pyglet.window.Window()
-ctx = ModernGL.create_context()
+# import ModernGL
+# import pyglet
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = pyglet.window.Window()
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec4 vert_color;
-        out vec4 frag_color;
+#         in vec2 vert;
 
-        uniform vec2 scale;
-        uniform float rotation;
+#         in vec4 vert_color;
+#         out vec4 frag_color;
 
-        void main() {
-            frag_color = vert_color;
-            float r = rotation * (0.5 + gl_InstanceID * 0.05);
-            mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
-            gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         uniform vec2 scale;
+#         uniform float rotation;
 
-        in vec4 frag_color;
-        out vec4 color;
+#         void main() {
+#             frag_color = vert_color;
+#             float r = rotation * (0.5 + gl_InstanceID * 0.05);
+#             mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
+#             gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(frag_color);
-        }
-    '''),
-])
+#         in vec4 frag_color;
+#         out vec4 color;
 
-scale = prog.uniforms['scale']
-rotation = prog.uniforms['rotation']
+#         void main() {
+#             color = vec4(frag_color);
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '18f',
+# scale = prog.uniforms['scale']
+# rotation = prog.uniforms['rotation']
 
-    1.0, 0.0,
-    1.0, 0.0, 0.0, 0.5,
+# vbo = ctx.buffer(struct.pack(
+#     '18f',
 
-    -0.5, 0.86,
-    0.0, 1.0, 0.0, 0.5,
+#     1.0, 0.0,
+#     1.0, 0.0, 0.0, 0.5,
 
-    -0.5, -0.86,
-    0.0, 0.0, 1.0, 0.5,
-))
+#     -0.5, 0.86,
+#     0.0, 1.0, 0.0, 0.5,
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
+#     -0.5, -0.86,
+#     0.0, 0.0, 1.0, 0.5,
+# ))
 
-
-def update(dt):
-    scale.value = (wnd.height / wnd.width * 0.75, 0.75)
-
-    ctx.enable(ModernGL.BLEND)
-    ctx.viewport = (0, 0, wnd.width, wnd.height)
-    ctx.clear(0.9, 0.9, 0.9)
-    rotation.value += dt
-    vao.render(instances=10)
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
 
 
-pyglet.clock.schedule_interval(update, 1.0 / 60.0)
-pyglet.app.run()
+# def update(dt):
+#     scale.value = (wnd.height / wnd.width * 0.75, 0.75)
+
+#     ctx.enable(ModernGL.BLEND)
+#     ctx.viewport = (0, 0, wnd.width, wnd.height)
+#     ctx.clear(0.9, 0.9, 0.9)
+#     rotation.value += dt
+#     vao.render(instances=10)
+
+
+# pyglet.clock.schedule_interval(update, 1.0 / 60.0)
+# pyglet.app.run()

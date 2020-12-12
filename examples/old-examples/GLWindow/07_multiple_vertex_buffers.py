@@ -1,104 +1,108 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# import GLWindow
+# import ModernGL
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
-        in vec2 pos;
-        in float scale;
-        in vec3 color;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        out vec3 v_color;
+#         in vec2 vert;
+#         in vec2 pos;
+#         in float scale;
+#         in vec3 color;
 
-        void main() {
-            v_color = color;
-            gl_Position = vec4(pos + vert * scale, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         out vec3 v_color;
 
-        in vec3 v_color;
-        out vec4 f_color;
+#         void main() {
+#             v_color = color;
+#             gl_Position = vec4(pos + vert * scale, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            f_color = vec4(v_color, 1.0);
-        }
-    '''),
-])
+#         in vec3 v_color;
+#         out vec4 f_color;
 
-# Vertex coordinates stored in vbo1
-#
-#     B------D
-#     |      |
-#     A------C
+#         void main() {
+#             f_color = vec4(v_color, 1.0);
+#         }
+#     '''),
+# ])
 
-vbo1 = ctx.buffer(struct.pack(
-    '8f',
-    -0.5, -0.5,
-    -0.5, 0.5,
-    0.5, -0.5,
-    0.5, 0.5,
-))
+# # Vertex coordinates stored in vbo1
+# #
+# #     B------D
+# #     |      |
+# #     A------C
 
-# Vertex colors stored in vbo2
-#
-#     A, B are green
-#     C, D are blue
+# vbo1 = ctx.buffer(struct.pack(
+#     '8f',
+#     -0.5, -0.5,
+#     -0.5, 0.5,
+#     0.5, -0.5,
+#     0.5, 0.5,
+# ))
 
-vbo2 = ctx.buffer(struct.pack(
-    '12f',
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-))
+# # Vertex colors stored in vbo2
+# #
+# #     A, B are green
+# #     C, D are blue
 
-# (Per instance) positions and scales stored in vbo3
-# There are 8 (position, scale) pairs
+# vbo2 = ctx.buffer(struct.pack(
+#     '12f',
+#     0.0, 1.0, 0.0,
+#     0.0, 1.0, 0.0,
+#     0.0, 0.0, 1.0,
+#     0.0, 0.0, 1.0,
+# ))
 
-vbo3 = ctx.buffer(struct.pack(
-    '24f',
-    0.5, 0.0, 0.3,
-    0.35, 0.35, 0.2,
-    0.0, 0.5, 0.3,
-    -0.35, 0.35, 0.2,
-    -0.5, 0.0, 0.3,
-    -0.35, -0.35, 0.2,
-    0.0, -0.5, 0.3,
-    0.35, -0.35, 0.2,
-))
+# # (Per instance) positions and scales stored in vbo3
+# # There are 8 (position, scale) pairs
 
-# Index buffer (also called element buffer)
-# There are 2 trianges to render
-#
-#     A, B, C
-#     B, C, D
+# vbo3 = ctx.buffer(struct.pack(
+#     '24f',
+#     0.5, 0.0, 0.3,
+#     0.35, 0.35, 0.2,
+#     0.0, 0.5, 0.3,
+#     -0.35, 0.35, 0.2,
+#     -0.5, 0.0, 0.3,
+#     -0.35, -0.35, 0.2,
+#     0.0, -0.5, 0.3,
+#     0.35, -0.35, 0.2,
+# ))
 
-ibo = ctx.buffer(struct.pack('6i', 0, 1, 2, 1, 2, 3))
+# # Index buffer (also called element buffer)
+# # There are 2 trianges to render
+# #
+# #     A, B, C
+# #     B, C, D
 
-# The vao_content is a list of 3-tuples (buffer, format, attribs)
-# the format can have an empty or '/v', '/i', '/r' ending.
-# '/v' attributes are the default
-# '/i` attributes are per instance attributes
-# '/r' attributes are default values for the attributes (per render attributes)
+# ibo = ctx.buffer(struct.pack('6i', 0, 1, 2, 1, 2, 3))
 
-vao_content = [
-    (vbo1, '2f', ['vert']),
-    (vbo2, '3f', ['color']),
-    (vbo3, '2f1f/i', ['pos', 'scale']),
-]
+# # The vao_content is a list of 3-tuples (buffer, format, attribs)
+# # the format can have an empty or '/v', '/i', '/r' ending.
+# # '/v' attributes are the default
+# # '/i` attributes are per instance attributes
+# # '/r' attributes are default values for the attributes (per render attributes)
 
-vao = ctx.vertex_array(prog, vao_content, ibo)
+# vao_content = [
+#     (vbo1, '2f', ['vert']),
+#     (vbo2, '3f', ['color']),
+#     (vbo3, '2f1f/i', ['pos', 'scale']),
+# ]
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    vao.render(instances=8)
+# vao = ctx.vertex_array(prog, vao_content, ibo)
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     vao.render(instances=8)

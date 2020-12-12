@@ -1,83 +1,87 @@
-import struct
-import sys
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-from OpenGL.GLUT import (
-    GLUT_DEPTH, GLUT_DOUBLE, GLUT_ELAPSED_TIME, GLUT_RGB, GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH, glutCreateWindow,
-    glutDisplayFunc, glutGet, glutIdleFunc, glutInit, glutInitDisplayMode, glutInitWindowSize, glutMainLoop,
-    glutSwapBuffers
-)
+# import struct
+# import sys
 
-glutInit(sys.argv)
-glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-glutInitWindowSize(800, 600)
-glutCreateWindow(b'Alpha Blending')
+# import ModernGL
+# from OpenGL.GLUT import (
+#     GLUT_DEPTH, GLUT_DOUBLE, GLUT_ELAPSED_TIME, GLUT_RGB, GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH, glutCreateWindow,
+#     glutDisplayFunc, glutGet, glutIdleFunc, glutInit, glutInitDisplayMode, glutInitWindowSize, glutMainLoop,
+#     glutSwapBuffers
+# )
 
-ctx = ModernGL.create_context()
+# glutInit(sys.argv)
+# glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
+# glutInitWindowSize(800, 600)
+# glutCreateWindow(b'Alpha Blending')
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# ctx = ModernGL.create_context()
 
-        in vec2 in_vert;
-        in vec4 in_color;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        out vec4 v_color;
+#         in vec2 in_vert;
+#         in vec4 in_color;
 
-        uniform vec2 Scale;
-        uniform float Rotation;
+#         out vec4 v_color;
 
-        void main() {
-            v_color = in_color;
-            float r = Rotation * (0.5 + gl_InstanceID * 0.05);
-            mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
-            gl_Position = vec4((rot * in_vert) * Scale, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         uniform vec2 Scale;
+#         uniform float Rotation;
 
-        in vec4 v_color;
-        out vec4 f_color;
+#         void main() {
+#             v_color = in_color;
+#             float r = Rotation * (0.5 + gl_InstanceID * 0.05);
+#             mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
+#             gl_Position = vec4((rot * in_vert) * Scale, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            f_color = v_color;
-        }
-    '''),
-])
+#         in vec4 v_color;
+#         out vec4 f_color;
 
-rotation = prog.uniforms['Rotation']
-scale = prog.uniforms['Scale']
+#         void main() {
+#             f_color = v_color;
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '18f',
+# rotation = prog.uniforms['Rotation']
+# scale = prog.uniforms['Scale']
 
-    1.0, 0.0,
-    1.0, 0.0, 0.0, 0.5,
+# vbo = ctx.buffer(struct.pack(
+#     '18f',
 
-    -0.5, 0.86,
-    0.0, 1.0, 0.0, 0.5,
+#     1.0, 0.0,
+#     1.0, 0.0, 0.0, 0.5,
 
-    -0.5, -0.86,
-    0.0, 0.0, 1.0, 0.5,
-))
+#     -0.5, 0.86,
+#     0.0, 1.0, 0.0, 0.5,
 
-vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
+#     -0.5, -0.86,
+#     0.0, 0.0, 1.0, 0.5,
+# ))
 
-
-def display():
-    width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
-    elapsed = glutGet(GLUT_ELAPSED_TIME) / 1000.0
-
-    ctx.clear(0.9, 0.9, 0.9)
-    ctx.enable(ModernGL.BLEND)
-    scale.value = (height / width * 0.75, 0.75)
-    rotation.value = elapsed
-    vao.render(instances=10)
-
-    glutSwapBuffers()
+# vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
 
 
-glutDisplayFunc(display)
-glutIdleFunc(display)
-glutMainLoop()
+# def display():
+#     width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
+#     elapsed = glutGet(GLUT_ELAPSED_TIME) / 1000.0
+
+#     ctx.clear(0.9, 0.9, 0.9)
+#     ctx.enable(ModernGL.BLEND)
+#     scale.value = (height / width * 0.75, 0.75)
+#     rotation.value = elapsed
+#     vao.render(instances=10)
+
+#     glutSwapBuffers()
+
+
+# glutDisplayFunc(display)
+# glutIdleFunc(display)
+# glutMainLoop()

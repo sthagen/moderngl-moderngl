@@ -1,77 +1,81 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-from PIL import Image
-from pyrr import Matrix44
+# import struct
 
-render_size = 1024, 1024
-image_size = 512, 512
+# import ModernGL
+# from PIL import Image
+# from pyrr import Matrix44
 
-ctx = ModernGL.create_standalone_context()
+# render_size = 1024, 1024
+# image_size = 512, 512
 
-color_rbo = ctx.renderbuffer(render_size)
-depth_rbo = ctx.depth_renderbuffer(render_size)
-fbo = ctx.framebuffer(color_rbo, depth_rbo)
+# ctx = ModernGL.create_standalone_context()
 
-fbo.use()
+# color_rbo = ctx.renderbuffer(render_size)
+# depth_rbo = ctx.depth_renderbuffer(render_size)
+# fbo = ctx.framebuffer(color_rbo, depth_rbo)
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# fbo.use()
 
-        uniform mat4 Mvp;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec3 in_vert;
-        in vec3 in_color;
+#         uniform mat4 Mvp;
 
-        out vec3 v_color;
+#         in vec3 in_vert;
+#         in vec3 in_color;
 
-        void main() {
-            v_color = in_color;
-            gl_Position = Mvp * vec4(in_vert, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         out vec3 v_color;
 
-        in vec3 v_color;
-        out vec4 f_color;
+#         void main() {
+#             v_color = in_color;
+#             gl_Position = Mvp * vec4(in_vert, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            f_color = vec4(v_color, 1.0);
-        }
-    '''),
-])
+#         in vec3 v_color;
+#         out vec4 f_color;
 
-mvp = prog.uniforms['Mvp']
+#         void main() {
+#             f_color = vec4(v_color, 1.0);
+#         }
+#     '''),
+# ])
 
-grid = bytearray()
+# mvp = prog.uniforms['Mvp']
 
-for i in range(0, 32 + 1):
-    grid += struct.pack('6f', i - 16.0, -16.0, 0.0, 0.0, 0.0, 0.0)
-    grid += struct.pack('6f', i - 16.0, 16.0, 0.0, 0.0, 0.0, 0.0)
-    grid += struct.pack('6f', -16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
-    grid += struct.pack('6f', 16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
+# grid = bytearray()
 
-vbo = ctx.buffer(grid)
-vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
+# for i in range(0, 32 + 1):
+#     grid += struct.pack('6f', i - 16.0, -16.0, 0.0, 0.0, 0.0, 0.0)
+#     grid += struct.pack('6f', i - 16.0, 16.0, 0.0, 0.0, 0.0, 0.0)
+#     grid += struct.pack('6f', -16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
+#     grid += struct.pack('6f', 16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
 
-width, height = render_size
-ctx.viewport = (0, 0, width, height)
-ctx.clear(0.9, 0.9, 0.9)
-ctx.enable(ModernGL.DEPTH_TEST)
+# vbo = ctx.buffer(grid)
+# vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
 
-proj = Matrix44.perspective_projection(45.0, width / height, 0.1, 1000.0)
-lookat = Matrix44.look_at(
-    (40.0, 30.0, 20.0),
-    (0.0, 0.0, 0.0),
-    (0.0, 0.0, 1.0),
-)
+# width, height = render_size
+# ctx.viewport = (0, 0, width, height)
+# ctx.clear(0.9, 0.9, 0.9)
+# ctx.enable(ModernGL.DEPTH_TEST)
 
-mvp.write((proj * lookat).astype('float32').tobytes())
-vao.render(ModernGL.LINES)
+# proj = Matrix44.perspective_projection(45.0, width / height, 0.1, 1000.0)
+# lookat = Matrix44.look_at(
+#     (40.0, 30.0, 20.0),
+#     (0.0, 0.0, 0.0),
+#     (0.0, 0.0, 1.0),
+# )
 
-img = Image.frombytes('RGB', render_size, fbo.read())
-img = img.transpose(Image.FLIP_TOP_BOTTOM)
-img = img.resize(image_size, Image.LANCZOS)
-img.save('perspective_projection.png')
+# mvp.write((proj * lookat).astype('float32').tobytes())
+# vao.render(ModernGL.LINES)
+
+# img = Image.frombytes('RGB', render_size, fbo.read())
+# img = img.transpose(Image.FLIP_TOP_BOTTOM)
+# img = img.resize(image_size, Image.LANCZOS)
+# img.save('perspective_projection.png')

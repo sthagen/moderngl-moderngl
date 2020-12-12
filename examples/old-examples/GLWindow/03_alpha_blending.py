@@ -1,78 +1,82 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
 
-# Window & Context
+# import GLWindow
+# import ModernGL
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# # Window & Context
 
-# Shaders & Program
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# # Shaders & Program
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec4 vert_color;
-        out vec4 frag_color;
+#         in vec2 vert;
 
-        uniform vec2 scale;
-        uniform float rotation;
+#         in vec4 vert_color;
+#         out vec4 frag_color;
 
-        void main() {
-            frag_color = vert_color;
-            float r = rotation * (0.5 + gl_InstanceID * 0.05);
-            mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
-            gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         uniform vec2 scale;
+#         uniform float rotation;
 
-        in vec4 frag_color;
-        out vec4 color;
+#         void main() {
+#             frag_color = vert_color;
+#             float r = rotation * (0.5 + gl_InstanceID * 0.05);
+#             mat2 rot = mat2(cos(r), sin(r), -sin(r), cos(r));
+#             gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(frag_color);
-        }
-    '''),
-])
+#         in vec4 frag_color;
+#         out vec4 color;
 
-# Uniforms
+#         void main() {
+#             color = vec4(frag_color);
+#         }
+#     '''),
+# ])
 
-scale = prog.uniforms['scale']
-rotation = prog.uniforms['rotation']
+# # Uniforms
 
-width, height = wnd.size
-scale.value = (height / width * 0.75, 0.75)
+# scale = prog.uniforms['scale']
+# rotation = prog.uniforms['rotation']
 
-# Buffer
+# width, height = wnd.size
+# scale.value = (height / width * 0.75, 0.75)
 
-vbo = ctx.buffer(struct.pack(
-    '18f',
+# # Buffer
 
-    1.0, 0.0,
-    1.0, 0.0, 0.0, 0.5,
+# vbo = ctx.buffer(struct.pack(
+#     '18f',
 
-    -0.5, 0.86,
-    0.0, 1.0, 0.0, 0.5,
+#     1.0, 0.0,
+#     1.0, 0.0, 0.0, 0.5,
 
-    -0.5, -0.86,
-    0.0, 0.0, 1.0, 0.5,
-))
+#     -0.5, 0.86,
+#     0.0, 1.0, 0.0, 0.5,
 
-# Put everything together
+#     -0.5, -0.86,
+#     0.0, 0.0, 1.0, 0.5,
+# ))
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
+# # Put everything together
 
-# Main loop
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
 
-while wnd.update():
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    ctx.enable(ModernGL.BLEND)
-    rotation.value = wnd.time
-    vao.render(instances=10)
+# # Main loop
+
+# while wnd.update():
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     ctx.enable(ModernGL.BLEND)
+#     rotation.value = wnd.time
+#     vao.render(instances=10)

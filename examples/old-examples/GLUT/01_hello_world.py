@@ -1,49 +1,53 @@
-import struct
-import sys
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-from OpenGL.GLUT import (
-    GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGB, glutCreateWindow, glutDisplayFunc, glutInit, glutInitDisplayMode,
-    glutInitWindowSize, glutMainLoop, glutSwapBuffers
-)
+# import struct
+# import sys
 
-glutInit(sys.argv)
-glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-glutInitWindowSize(800, 600)
-glutCreateWindow(b'Hello World')
+# import ModernGL
+# from OpenGL.GLUT import (
+#     GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGB, glutCreateWindow, glutDisplayFunc, glutInit, glutInitDisplayMode,
+#     glutInitWindowSize, glutMainLoop, glutSwapBuffers
+# )
 
-ctx = ModernGL.create_context()
+# glutInit(sys.argv)
+# glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
+# glutInitWindowSize(800, 600)
+# glutCreateWindow(b'Hello World')
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
 
-        out vec4 color;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(0.30, 0.50, 1.00, 1.0);
-        }
-    '''),
-])
+#         out vec4 color;
 
-vbo = ctx.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+#         void main() {
+#             color = vec4(0.30, 0.50, 1.00, 1.0);
+#         }
+#     '''),
+# ])
 
-
-def display():
-    ctx.clear(0.9, 0.9, 0.9)
-    vao.render()
-    glutSwapBuffers()
+# vbo = ctx.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
 
-glutDisplayFunc(display)
-glutMainLoop()
+# def display():
+#     ctx.clear(0.9, 0.9, 0.9)
+#     vao.render()
+#     glutSwapBuffers()
+
+
+# glutDisplayFunc(display)
+# glutMainLoop()

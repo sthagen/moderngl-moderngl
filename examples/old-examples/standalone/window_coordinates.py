@@ -1,66 +1,70 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-from PIL import Image
+# import struct
 
-render_size = 1024, 1024
-image_size = 512, 512
+# import ModernGL
+# from PIL import Image
 
-ctx = ModernGL.create_standalone_context()
+# render_size = 1024, 1024
+# image_size = 512, 512
 
-color_rbo = ctx.renderbuffer(render_size)
-depth_rbo = ctx.depth_renderbuffer(render_size)
-fbo = ctx.framebuffer(color_rbo, depth_rbo)
+# ctx = ModernGL.create_standalone_context()
 
-fbo.use()
+# color_rbo = ctx.renderbuffer(render_size)
+# depth_rbo = ctx.depth_renderbuffer(render_size)
+# fbo = ctx.framebuffer(color_rbo, depth_rbo)
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# fbo.use()
 
-        uniform vec2 WindowSize;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec2 in_vert;
-        in vec3 in_color;
+#         uniform vec2 WindowSize;
 
-        out vec3 v_color;
+#         in vec2 in_vert;
+#         in vec3 in_color;
 
-        void main() {
-            v_color = in_color;
-            gl_Position = vec4(in_vert / WindowSize * 2.0, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         out vec3 v_color;
 
-        in vec3 v_color;
-        out vec4 f_color;
+#         void main() {
+#             v_color = in_color;
+#             gl_Position = vec4(in_vert / WindowSize * 2.0, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            f_color = vec4(v_color, 1.0);
-        }
-    '''),
-])
+#         in vec3 v_color;
+#         out vec4 f_color;
 
-window_size = prog.uniforms['WindowSize']
+#         void main() {
+#             f_color = vec4(v_color, 1.0);
+#         }
+#     '''),
+# ])
 
-vbo = ctx.buffer(struct.pack(
-    '15f',
-    0.0, 100.0, 1.0, 0.0, 0.0,
-    -86.0, -50.0, 0.0, 1.0, 0.0,
-    86.0, -50.0, 0.0, 0.0, 1.0,
-))
+# window_size = prog.uniforms['WindowSize']
 
-vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
+# vbo = ctx.buffer(struct.pack(
+#     '15f',
+#     0.0, 100.0, 1.0, 0.0, 0.0,
+#     -86.0, -50.0, 0.0, 1.0, 0.0,
+#     86.0, -50.0, 0.0, 0.0, 1.0,
+# ))
 
-width, height = render_size
-ctx.viewport = (0, 0, width, height)
-ctx.clear(0.9, 0.9, 0.9)
-ctx.enable(ModernGL.BLEND)
-window_size.value = (width, height)
-vao.render()
+# vao = ctx.simple_vertex_array(prog, vbo, ['in_vert', 'in_color'])
 
-img = Image.frombytes('RGB', render_size, fbo.read())
-img = img.transpose(Image.FLIP_TOP_BOTTOM)
-img = img.resize(image_size, Image.LANCZOS)
-img.save('window_coordinates.png')
+# width, height = render_size
+# ctx.viewport = (0, 0, width, height)
+# ctx.clear(0.9, 0.9, 0.9)
+# ctx.enable(ModernGL.BLEND)
+# window_size.value = (width, height)
+# vao.render()
+
+# img = Image.frombytes('RGB', render_size, fbo.read())
+# img = img.transpose(Image.FLIP_TOP_BOTTOM)
+# img = img.resize(image_size, Image.LANCZOS)
+# img.save('window_coordinates.png')

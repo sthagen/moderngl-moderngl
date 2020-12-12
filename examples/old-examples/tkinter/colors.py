@@ -1,106 +1,110 @@
-import struct
-import tkinter
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import ModernGL
-import ModernGL.tk
+# import struct
+# import tkinter
 
-ctx = ModernGL.create_standalone_context()
+# import ModernGL
+# import ModernGL.tk
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# ctx = ModernGL.create_standalone_context()
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        in vec3 vert_color;
-        out vec3 frag_color;
+#         in vec2 vert;
 
-        uniform vec2 scale;
-        uniform float rotation;
+#         in vec3 vert_color;
+#         out vec3 frag_color;
 
-        void main() {
-            frag_color = vert_color;
-            mat2 rot = mat2(
-                cos(rotation), sin(rotation),
-                -sin(rotation), cos(rotation)
-            );
-            gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         uniform vec2 scale;
+#         uniform float rotation;
 
-        in vec3 frag_color;
-        out vec4 color;
+#         void main() {
+#             frag_color = vert_color;
+#             mat2 rot = mat2(
+#                 cos(rotation), sin(rotation),
+#                 -sin(rotation), cos(rotation)
+#             );
+#             gl_Position = vec4((rot * vert) * scale, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(frag_color, 1.0);
-        }
-    '''),
-])
+#         in vec3 frag_color;
+#         out vec4 color;
 
-# Uniforms
+#         void main() {
+#             color = vec4(frag_color, 1.0);
+#         }
+#     '''),
+# ])
 
-scale = prog.uniforms['scale']
-rotation = prog.uniforms['rotation']
+# # Uniforms
 
-width, height = 512, 512
-scale.value = (height / width * 0.75, 0.75)
+# scale = prog.uniforms['scale']
+# rotation = prog.uniforms['rotation']
 
-# Buffer
+# width, height = 512, 512
+# scale.value = (height / width * 0.75, 0.75)
 
-vbo = ctx.buffer(struct.pack(
-    '15f',
+# # Buffer
 
-    1.0, 0.0,
-    1.0, 0.0, 0.0,
+# vbo = ctx.buffer(struct.pack(
+#     '15f',
 
-    -0.5, 0.86,
-    0.0, 1.0, 0.0,
+#     1.0, 0.0,
+#     1.0, 0.0, 0.0,
 
-    -0.5, -0.86,
-    0.0, 0.0, 1.0,
-))
+#     -0.5, 0.86,
+#     0.0, 1.0, 0.0,
 
-# Put everything together
+#     -0.5, -0.86,
+#     0.0, 0.0, 1.0,
+# ))
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
+# # Put everything together
 
-# Main loop
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert', 'vert_color'])
 
-
-size = (512, 512)
-color_rbo = ctx.renderbuffer(size)
-depth_rbo = ctx.depth_renderbuffer(size)
-fbo = ctx.framebuffer(color_rbo, depth_rbo)
-
-root = tkinter.Tk()
-
-# frame = tkinter.Frame(root, width=512, height=512, bg="", colormap="new")
-frame = ModernGL.tk.ModernGLCanvas(root, 512, 512)
-frame.pack()
-
-# connector = ModernGL.tk.connect(frame)
-R = tkinter.Scale(root, from_=0, to=255, orient=tkinter.HORIZONTAL, length=300)
-R.pack()
-
-k = 1
+# # Main loop
 
 
-def task():
-    global k
-    k += 0.02
-    fbo.use()
-    ctx.viewport = (0, 0, 512, 512)
-    ctx.clear(0.9, 0.9, 0.9)
-    rotation.value = k
-    vao.render()
+# size = (512, 512)
+# color_rbo = ctx.renderbuffer(size)
+# depth_rbo = ctx.depth_renderbuffer(size)
+# fbo = ctx.framebuffer(color_rbo, depth_rbo)
 
-    fbo.read_into(frame.pixels, components=3)
-    frame.update()
+# root = tkinter.Tk()
 
-    root.after(1, task)
+# # frame = tkinter.Frame(root, width=512, height=512, bg="", colormap="new")
+# frame = ModernGL.tk.ModernGLCanvas(root, 512, 512)
+# frame.pack()
+
+# # connector = ModernGL.tk.connect(frame)
+# R = tkinter.Scale(root, from_=0, to=255, orient=tkinter.HORIZONTAL, length=300)
+# R.pack()
+
+# k = 1
 
 
-root.after(1, task)
-tkinter.mainloop()
+# def task():
+#     global k
+#     k += 0.02
+#     fbo.use()
+#     ctx.viewport = (0, 0, 512, 512)
+#     ctx.clear(0.9, 0.9, 0.9)
+#     rotation.value = k
+#     vao.render()
+
+#     fbo.read_into(frame.pixels, components=3)
+#     frame.update()
+
+#     root.after(1, task)
+
+
+# root.after(1, task)
+# tkinter.mainloop()

@@ -1,5 +1,8 @@
 # Examples
 
+**NOTE: These examples are deprecated and may not work with the
+latest version of moderngl**
+
 You can use your favorite window with ModernGL.
 
 > Missing?<br>Write an [issue](https://github.com/cprogrammer1994/ModernGL/issues).

@@ -1,52 +1,56 @@
-import struct
+"""
+NOTE: This example is from ModernGL 4 or earlier. We simply disable and archive them for now.
+"""
 
-import GLWindow
-import ModernGL
+# import struct
 
-wnd = GLWindow.create_window()
-ctx = ModernGL.create_context()
+# import GLWindow
+# import ModernGL
 
-prog = ctx.program(
-    ctx.vertex_shader('''
-        #version 330
+# wnd = GLWindow.create_window()
+# ctx = ModernGL.create_context()
 
-        in vec2 vert;
+# prog = ctx.program(
+#     ctx.vertex_shader('''
+#         #version 330
 
-        void main() {
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-    '''),
-    ctx.fragment_shader('''
-        #version 330
+#         in vec2 vert;
 
-        out vec4 color;
+#         void main() {
+#             gl_Position = vec4(vert, 0.0, 1.0);
+#         }
+#     '''),
+#     ctx.fragment_shader('''
+#         #version 330
 
-        void main() {
-            color = vec4(0.3, 0.5, 1.0, 1.0);
-        }
-    '''),
-])
+#         out vec4 color;
 
-vbo = ctx.buffer(struct.pack(
-    '12f',
-    -0.5, -0.5,
-    -0.5, 0.5,
-    0.5, -0.5,
-    -0.5, 0.5,
-    0.5, -0.5,
-    0.5, 0.5,
-))
+#         void main() {
+#             color = vec4(0.3, 0.5, 1.0, 1.0);
+#         }
+#     '''),
+# ])
 
-vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
+# vbo = ctx.buffer(struct.pack(
+#     '12f',
+#     -0.5, -0.5,
+#     -0.5, 0.5,
+#     0.5, -0.5,
+#     -0.5, 0.5,
+#     0.5, -0.5,
+#     0.5, 0.5,
+# ))
 
-ctx.enable(ModernGL.CULL_FACE)
+# vao = ctx.simple_vertex_array(prog, vbo, ['vert'])
 
-while wnd.update():
-    if wnd.time % 1.0 < 0.5:
-        ctx.front_face = 'CW'
-    else:
-        ctx.front_face = 'CCW'
+# ctx.enable(ModernGL.CULL_FACE)
 
-    ctx.viewport = wnd.viewport
-    ctx.clear(0.9, 0.9, 0.9)
-    vao.render()
+# while wnd.update():
+#     if wnd.time % 1.0 < 0.5:
+#         ctx.front_face = 'CW'
+#     else:
+#         ctx.front_face = 'CCW'
+
+#     ctx.viewport = wnd.viewport
+#     ctx.clear(0.9, 0.9, 0.9)
+#     vao.render()
