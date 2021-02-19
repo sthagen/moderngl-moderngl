@@ -31,10 +31,13 @@ class Buffer:
     def __eq__(self, other):
         return type(self) is type(other) and self.mglo is other.mglo
 
+    def __hash__(self) -> int:
+        return id(self)
+
     @property
     def size(self) -> int:
         '''
-            int: The size of the buffer.
+            int: The size of the buffer in bytes.
         '''
 
         return self.mglo.size()

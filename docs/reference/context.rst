@@ -19,7 +19,7 @@ ModernGL Objects
 .. automethod:: Context.simple_vertex_array(program, buffer, *attributes, index_buffer=None, index_element_size=4) -> VertexArray
 .. automethod:: Context.vertex_array(*args, **kwargs) -> VertexArray
 .. automethod:: Context.buffer(data=None, reserve=0, dynamic=False) -> Buffer
-.. automethod:: Context.texture(size, components, data=None, samples=0, alignment=1, dtype='f1') -> Texture
+.. automethod:: Context.texture(size, components, data=None, samples=0, alignment=1, dtype='f1', internal_format=None) -> Texture
 .. automethod:: Context.depth_texture(size, data=None, samples=0, alignment=4) -> Texture
 .. automethod:: Context.texture3d(size, components, data=None, alignment=1, dtype='f1') -> Texture3D
 .. automethod:: Context.texture_array(size, components, data=None, alignment=1, dtype='f1') -> TextureArray
@@ -75,6 +75,7 @@ Attributes
 .. autoattribute:: Context.patch_vertices
 .. autoattribute:: Context.provoking_vertex
 .. autoattribute:: Context.error
+.. autoattribute:: Context.extensions
 .. autoattribute:: Context.info
 .. autoattribute:: Context.mglo
 .. autoattribute:: Context.extra
@@ -106,6 +107,35 @@ These values are available in the ``Context`` object and in the
 .. autoattribute:: Context.CULL_FACE
 .. autoattribute:: Context.RASTERIZER_DISCARD
 .. autoattribute:: Context.PROGRAM_POINT_SIZE
+
+Primitive Modes
+---------------
+
+.. autoattribute:: Context.POINTS
+.. autoattribute:: Context.LINES
+.. autoattribute:: Context.LINE_LOOP
+.. autoattribute:: Context.LINE_STRIP
+.. autoattribute:: Context.TRIANGLES
+.. autoattribute:: Context.TRIANGLE_STRIP
+.. autoattribute:: Context.TRIANGLE_FAN
+.. autoattribute:: Context.LINES_ADJACENCY
+.. autoattribute:: Context.LINE_STRIP_ADJACENCY
+.. autoattribute:: Context.TRIANGLES_ADJACENCY
+.. autoattribute:: Context.TRIANGLE_STRIP_ADJACENCY
+.. autoattribute:: Context.PATCHES
+
+Texture Filters
+~~~~~~~~~~~~~~~
+
+Also available in the :py:class:`Context` instance
+including mode details.
+
+.. autoattribute:: Context.NEAREST
+.. autoattribute:: Context.LINEAR
+.. autoattribute:: Context.NEAREST_MIPMAP_NEAREST
+.. autoattribute:: Context.LINEAR_MIPMAP_NEAREST
+.. autoattribute:: Context.NEAREST_MIPMAP_LINEAR
+.. autoattribute:: Context.LINEAR_MIPMAP_LINEAR
 
 Blend Functions
 ---------------

@@ -107,6 +107,7 @@ struct MGLContext {
 	PyObject * enter_func;
 	PyObject * exit_func;
 	PyObject * release_func;
+	PyObject * extensions;
 
 	MGLFramebuffer * default_framebuffer;
 	MGLFramebuffer * bound_framebuffer;
@@ -180,8 +181,6 @@ struct MGLProgram {
 
 	int geometry_input;
 	int geometry_output;
-	// Output primitive in transform feedbacks with geo shader
-	int geometry_output_feedback;
 
 	int program_obj;
 

@@ -1,7 +1,9 @@
+
+.. _context:
+
 Context Creation
 ================
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. Note:: From moderngl 5.6 context creation is handled by the glcontext_ package.
@@ -13,7 +15,6 @@ Context Creation
           project keeps evolving. If using anything outside of the default
           contexts provided per OS, please check the listed backends in
           the glcontext_ project.
-
 
 Introduction
 ------------
@@ -38,13 +39,16 @@ These default backends support two modes:
   library such as glfw, sdl2, pyglet etc.
 * Creating a headless context (No visible window)
 
-Attaching to an existing active context created by a window library::
+Detecting an existing active context created by a window library::
 
     import moderngl
-    # .. do window initialization here
+    # Create the window with an OpenGL context (Most window libraries support this)
     ctx = moderngl.create_context()
     # If successful we can now render to the window
     print("Default framebuffer is:", ctx.screen)
+
+A great reference using various window libraries can be found here: 
+https://github.com/moderngl/moderngl-window/tree/master/moderngl_window/context
 
 Creating a headless context::
 
@@ -87,7 +91,7 @@ For example: Making a headless EGL context on linux::
           the exact name of the library to load. More information
           in the glcontext_ docs.
 
-Context sharing
+Context Sharing
 ---------------
 
 .. Warning:: Object sharing is an experimental feature
@@ -136,5 +140,23 @@ More information for a deeper dive:
 * https://www.khronos.org/opengl/wiki/OpenGL_Object#Object_Sharing
 * https://www.khronos.org/opengl/wiki/Memory_Model
 
+Context Info
+------------
+
+Various information such as limits and driver information can be found in the
+:py:attr:`~moderngl.Context.info` property. It can often be useful to know
+the vendor and render for the context::
+
+    >>> import moderngl
+    >>> ctx = moderngl.create_context(standalone=True, gl_version=(4.6))
+    >>> ctx.info["GL_VENDOR"]
+    'NVIDIA Corporation'
+    >>> ctx.info["GL_RENDERER"] 
+    'GeForce RTX 2080 SUPER/PCIe/SSE2'
+    >>> ctx.info["GL_VERSION"]  
+    '3.3.0 NVIDIA 456.71'
+
+Note that it reports version 3.3 here because ModernGL by default
+requests a version 3.3 context (minimum requirement).
 
 .. _glcontext: https://github.com/moderngl/glcontext

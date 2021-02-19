@@ -1,6 +1,6 @@
 import os
 import warnings
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple
 
 from .buffer import Buffer
 from .compute_shader import ComputeShader
@@ -33,7 +33,7 @@ __all__ = ['Context', 'create_context', 'create_standalone_context',
            'FIRST_VERTEX_CONVENTION', 'LAST_VERTEX_CONVENTION']
 
 # Context Flags
-# Context Flags
+
 #: Represents no states. Can be used with :py:meth:`Context.enable_only` to disable all states.
 NOTHING = 0
 #: Enable/disable blending
@@ -49,15 +49,25 @@ RASTERIZER_DISCARD = 8
 PROGRAM_POINT_SIZE = 16
 
 # Blend functions
+#: (0,0,0,0)
 ZERO = 0x0000
+#: (1,1,1,1)
 ONE = 0x0001
+#: (Rs0/kR,Gs0/kG,Bs0/kB,As0/kA)
 SRC_COLOR = 0x0300
+#: (1,1,1,1) − (Rs0/kR,Gs0/kG,Bs0/kB,As0/kA)
 ONE_MINUS_SRC_COLOR = 0x0301
+#: (As0/kA,As0/kA,As0/kA,As0/kA)
 SRC_ALPHA = 0x0302
+#: (1,1,1,1) − (As0/kA,As0/kA,As0/kA,As0/kA)
 ONE_MINUS_SRC_ALPHA = 0x0303
+#: (Ad/kA,Ad/kA,Ad/kA,Ad/kA)
 DST_ALPHA = 0x0304
+#: (1,1,1,1) − (Ad/kA,Ad/kA,Ad/kA,Ad/kA)
 ONE_MINUS_DST_ALPHA = 0x0305
+#: (Rd/kR,Gd/kG,Bd/kB,Ad/kA)
 DST_COLOR = 0x0306
+#: (1,1,1,1) − (Rd/kR,Gd/kG,Bd/kB,Ad/kA)
 ONE_MINUS_DST_COLOR = 0x0307
 
 # Blend equations
@@ -107,16 +117,108 @@ class Context:
     #: When disabled :py:attr:`Context.point_size` is used.
     PROGRAM_POINT_SIZE = 16
 
+    # Primitive modes
+
+    #: Each vertex represents a point
+    POINTS = 0x0000
+    #: Vertices 0 and 1 are considered a line. Vertices 2 and 3 are considered a line.
+    #: And so on. If the user specifies a non-even number of vertices, then the extra vertex is ignored.
+    LINES = 0x0001
+    #: As line strips, except that the first and last vertices are also used as a line.
+    #: Thus, you get n lines for n input vertices. If the user only specifies 1 vertex,
+    #: the drawing command is ignored. The line between the first and last vertices happens
+    #: after all of the previous lines in the sequence.
+    LINE_LOOP = 0x0002
+    #: The adjacent vertices are considered lines. Thus, if you pass n vertices, you will get n-1 lines.
+    #: If the user only specifies 1 vertex, the drawing command is ignored.
+    LINE_STRIP = 0x0003
+    #: Vertices 0, 1, and 2 form a triangle. Vertices 3, 4, and 5 form a triangle. And so on.
+    TRIANGLES = 0x0004
+    #: Every group of 3 adjacent vertices forms a triangle. The face direction of the
+    #: strip is determined by the winding of the first triangle. Each successive triangle
+    #: will have its effective face order reversed, so the system compensates for that
+    #: by testing it in the opposite way. A vertex stream of n length will generate n-2 triangles.
+    TRIANGLE_STRIP = 0x0005
+    #: The first vertex is always held fixed. From there on, every group of 2 adjacent
+    #: vertices form a triangle with the first. So with a vertex stream, you get a list
+    #: of triangles like so: (0, 1, 2) (0, 2, 3), (0, 3, 4), etc. A vertex stream of
+    #: n length will generate n-2 triangles.
+    TRIANGLE_FAN = 0x0006
+    #: These are special primitives that are expected to be used specifically with 
+    #: geomtry shaders. These primitives give the geometry shader more vertices
+    #: to work with for each input primitive. Data needs to be duplicated in buffers.
+    LINES_ADJACENCY = 0x000A
+    #: These are special primitives that are expected to be used specifically with 
+    #: geomtry shaders. These primitives give the geometry shader more vertices
+    #: to work with for each input primitive. Data needs to be duplicated in buffers.
+    LINE_STRIP_ADJACENCY = 0x000B
+    #: These are special primitives that are expected to be used specifically with 
+    #: geomtry shaders. These primitives give the geometry shader more vertices
+    #: to work with for each input primitive. Data needs to be duplicated in buffers.
+    TRIANGLES_ADJACENCY = 0x000C
+    #: These are special primitives that are expected to be used specifically with 
+    #: geomtry shaders. These primitives give the geometry shader more vertices
+    #: to work with for each input primitive. Data needs to be duplicated in buffers.
+    TRIANGLE_STRIP_ADJACENCY = 0x0000D
+    #: primitive type can only be used when Tessellation is active. It is a primitive
+    #: with a user-defined number of vertices, which is then tessellated based on the
+    #: control and evaluation shaders into regular points, lines, or triangles, depending
+    #: on the TES's settings. 
+    PATCHES = 0x000E
+
+    # Texture filters
+    #: Returns the value of the texture element that is nearest 
+    #: (in Manhattan distance) to the specified texture coordinates. 
+    NEAREST = 0x2600
+    #: Returns the weighted average of the four texture elements
+    #: that are closest to the specified texture coordinates.
+    #: These can include items wrapped or repeated from other parts
+    #: of a texture, depending on the values of texture repeat mode,
+    #: and on the exact mapping. 
+    LINEAR = 0x2601
+    #: Chooses the mipmap that most closely matches the size of the
+    #: pixel being textured and uses the ``NEAREST`` criterion (the texture
+    #: element closest to the specified texture coordinates) to produce
+    #: a texture value. 
+    NEAREST_MIPMAP_NEAREST = 0x2700
+    #: Chooses the mipmap that most closely matches the size of the pixel
+    #: being textured and uses the ``LINEAR`` criterion (a weighted average
+    #: of the four texture elements that are closest to the specified
+    #: texture coordinates) to produce a texture value. 
+    LINEAR_MIPMAP_NEAREST = 0x2701
+    #: Chooses the two mipmaps that most closely match the size of the
+    #: pixel being textured and uses the ``NEAREST`` criterion (the texture
+    #: element closest to the specified texture coordinates ) to produce
+    #: a texture value from each mipmap. The final texture value is a
+    #: weighted average of those two values.
+    NEAREST_MIPMAP_LINEAR = 0x2702
+    #: Chooses the two mipmaps that most closely match the size of the pixel
+    #: being textured and uses the ``LINEAR`` criterion (a weighted average
+    #: of the texture elements that are closest to the specified texture
+    #: coordinates) to produce a texture value from each mipmap.
+    #: The final texture value is a weighted average of those two values.
+    LINEAR_MIPMAP_LINEAR = 0x2703    
+
     # Blend functions
+    #: (0,0,0,0)
     ZERO = 0x0000
+    #: (1,1,1,1)
     ONE = 0x0001
+    #: (Rs0/kR,Gs0/kG,Bs0/kB,As0/kA)
     SRC_COLOR = 0x0300
+    #: (1,1,1,1) − (Rs0/kR,Gs0/kG,Bs0/kB,As0/kA)
     ONE_MINUS_SRC_COLOR = 0x0301
+    #: (As0/kA,As0/kA,As0/kA,As0/kA)
     SRC_ALPHA = 0x0302
+    #: (1,1,1,1) − (As0/kA,As0/kA,As0/kA,As0/kA)
     ONE_MINUS_SRC_ALPHA = 0x0303
+    #: (Ad/kA,Ad/kA,Ad/kA,Ad/kA)
     DST_ALPHA = 0x0304
+    #: (1,1,1,1) − (Ad/kA,Ad/kA,Ad/kA,Ad/kA)
     ONE_MINUS_DST_ALPHA = 0x0305
+    #: (Rd/kR,Gd/kG,Bd/kB,Ad/kA)
     DST_COLOR = 0x0306
+    #: (1,1,1,1) − (Rd/kR,Gd/kG,Bd/kB,Ad/kA)
     ONE_MINUS_DST_COLOR = 0x0307
 
     #: Shotcut for the default blending ``SRC_ALPHA, ONE_MINUS_SRC_ALPHA``
@@ -148,12 +250,13 @@ class Context:
     #: Used with :py:attr:`Context.provoking_vertex`.
     LAST_VERTEX_CONVENTION = 0x8E4E
 
-    __slots__ = ['mglo', '_screen', '_info', 'version_code', 'fbo', 'extra']
+    __slots__ = ['mglo', '_screen', '_info', '_extensions', 'version_code', 'fbo', 'extra']
 
     def __init__(self):
         self.mglo = None  #: Internal representation for debug purposes only.
         self._screen = None
         self._info = None
+        self._extensions = None
         self.version_code = None  #: int: The OpenGL version code. Reports ``410`` for OpenGL 4.1
         #: Framebuffer: The active framebuffer.
         #: Set every time :py:meth:`Framebuffer.use()` is called.
@@ -167,9 +270,16 @@ class Context:
     def __eq__(self, other):
         return type(self) is type(other) and self.mglo is other.mglo
 
+    def __hash__(self) -> int:
+        return id(self)
+
     @property
     def line_width(self) -> float:
         '''
+        .. Warning:: A line width other than 1.0 is not guaranteed to work
+                     across different OpenGL implementations. For wide
+                     lines you should be using geometry shaders.
+
             float: Set the default line width.
         '''
 
@@ -527,11 +637,60 @@ class Context:
         return self.mglo.error
 
     @property
+    def extensions(self) -> Set[str]:
+        '''
+            Set[str]: The extensions supported by the context
+
+            All extensions names have a ``GL_`` prefix, so if the spec refers to ``ARB_compute_shader``
+            we need to look for ``GL_ARB_compute_shader``::
+
+                # If compute shaders are supported ...
+                >> "GL_ARB_compute_shader" in ctx.extensions
+                True                
+
+            Example data::
+
+                {
+                    'GL_ARB_multi_bind',
+                    'GL_ARB_shader_objects',
+                    'GL_ARB_half_float_vertex',
+                    'GL_ARB_map_buffer_alignment',
+                    'GL_ARB_arrays_of_arrays',
+                    'GL_ARB_pipeline_statistics_query', 
+                    'GL_ARB_provoking_vertex',
+                    'GL_ARB_gpu_shader5',
+                    'GL_ARB_uniform_buffer_object',
+                    'GL_EXT_blend_equation_separate',
+                    'GL_ARB_tessellation_shader',
+                    'GL_ARB_multi_draw_indirect',
+                    'GL_ARB_multisample',
+                    .. etc ..
+                }
+
+        '''
+        if self._extensions is None:
+            self._extensions = self.mglo.extensions
+
+        return self._extensions
+
+    @property
     def info(self) -> Dict[str, object]:
         '''
-            dict: Information about the context
+            dict: OpenGL Limits and information about the context
 
             Example::
+
+                # The maximum width and height of a texture
+                >> ctx.info["GL_MAX_TEXTURE_SIZE"]
+                16384
+
+                # Vendor and renderer
+                >> ctx.info["GL_VENDOR"]
+                NVIDIA Corporation
+                >> ctx.info["GL_RENDERER"]
+                NVIDIA GeForce GT 650M OpenGL Engine
+
+            Example data::
 
                 {
                     'GL_VENDOR': 'NVIDIA Corporation',
@@ -768,7 +927,9 @@ class Context:
 
     def detect_framebuffer(self, glo=None) -> 'Framebuffer':
         '''
-            Detect framebuffer.
+            Detect framebuffer. This is already done when creating a context,
+            but if the underlying window library for some changes the default framebuffer
+            during the lifetime of the application this might be necessary.
 
             Args:
                 glo (int): Framebuffer object.
@@ -811,9 +972,13 @@ class Context:
         return res
 
     def texture(self, size, components, data=None, *, samples=0, alignment=1,
-                dtype='f1') -> 'Texture':
+                dtype='f1', internal_format=None) -> 'Texture':
         '''
             Create a :py:class:`Texture` object.
+
+            .. Warning:: Do not play with ``internal_format`` unless you know exactly
+                         you are doing. This is an override to support sRGB and
+                         compressed textures if needed.
 
             Args:
                 size (tuple): The width and height of the texture.
@@ -824,13 +989,14 @@ class Context:
                 samples (int): The number of samples. Value 0 means no multisample format.
                 alignment (int): The byte alignment 1, 2, 4 or 8.
                 dtype (str): Data type.
+                internal_format (int): Override the internalformat of the texture (IF needed)
 
             Returns:
                 :py:class:`Texture` object
         '''
 
         res = Texture.__new__(Texture)
-        res.mglo, res._glo = self.mglo.texture(size, components, data, samples, alignment, dtype)
+        res.mglo, res._glo = self.mglo.texture(size, components, data, samples, alignment, dtype, internal_format or 0)
         res._size = size
         res._components = components
         res._samples = samples
@@ -1389,7 +1555,6 @@ class Context:
         When exiting the context the previously bound context is activated again.
 
         .. Warning:: Context switching can be risky unless you know what you are doing.
-                     ModernGL objects are not aware of what context is currently active.
                      Use with care.
         """
         self.mglo.__enter__()
@@ -1453,6 +1618,7 @@ def create_context(require=None, standalone=False, share=False, **settings) -> C
     ctx = Context.__new__(Context)
     ctx.mglo, ctx.version_code = mgl.create_context(glversion=require, mode=mode, **settings)
     ctx._info = None
+    ctx._extensions = None
     ctx.extra = None
 
     if ctx.version_code < require:
@@ -1472,8 +1638,8 @@ def create_context(require=None, standalone=False, share=False, **settings) -> C
 
 def create_standalone_context(require=None, share=False, **settings) -> 'Context':
     '''
-        Create a standalone ModernGL context.
-        The preferred way to make a context ``
+        Create a standalone/headless ModernGL context.
+        The preferred way of making a context is through :py:func:`moderngl.create_context`.
 
         Example::
 
@@ -1499,6 +1665,7 @@ def create_standalone_context(require=None, share=False, **settings) -> 'Context
     ctx._screen = None
     ctx.fbo = None
     ctx._info = None
+    ctx._extensions = None
     ctx.extra = None
 
     if require is not None and ctx.version_code < require:

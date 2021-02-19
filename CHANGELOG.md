@@ -5,8 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-# [5.6.2]
+# [5.6.4]
 
+* Transform feedback now supports all primitive modes both for
+  vertex and geometry shaders
+* ``VertexArray.transform()` now raises sane errors when using the wrong primitive mode
+  when used with geometry shaders
+* `VertexArray.transform()` now automatically detects output primitive based on
+  the input mode.
+* `GL_TRIANGLES_ADJACENCY` enum incorrectly mapped (`D0` instead of `0D`)
+* Primitive modes are now accessible in the `Context` instance.
+  For example: `ctx.POINTS` and `ctx.TRIANGLES`
+* Texture filers are now also available in the `Context` instance.
+  For example: `ctx.NEAREST` and `ctx.LINEAR`
+* Docstring and documentation improvements
+
+# [5.6.3]
+
+* Added `Context.extensions`. This is a `set` containing the
+  OpenGL extensions supported by the context.
+* Added support for overridable internal_format for `Texture`.
+  This opens up for sRGB and compressed formats if needed.
+* Docstring and documentation improvements
+
+# [5.6.2]
 ## Bugs
 
 * `TextureArray.build_mimpmaps()` used the wrong target when building mipmaps.
@@ -564,6 +586,8 @@ For more information please see: [Differences between ModernGL5 and ModernGL4](h
 
 - It was a tool for me to develop games in python
 
+[5.6.4]: https://github.com/moderngl/moderngl/compare/5.6.4...5.6.4
+[5.6.3]: https://github.com/moderngl/moderngl/compare/5.6.2...5.6.3
 [5.6.2]: https://github.com/moderngl/moderngl/compare/5.6.1...5.6.2
 [5.6.1]: https://github.com/moderngl/moderngl/compare/5.6.0...5.6.1
 [5.6.0]: https://github.com/moderngl/moderngl/compare/5.5.4...5.6.0

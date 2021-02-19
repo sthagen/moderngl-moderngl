@@ -275,6 +275,8 @@ PyObject * MGLContext_copy_framebuffer(MGLContext * self, PyObject * args) {
 		int format = formats[dst_texture->components];
 
 		gl.BindFramebuffer(GL_READ_FRAMEBUFFER, src->framebuffer_obj);
+		gl.ActiveTexture(GL_TEXTURE0 + self->default_texture_unit);
+		gl.BindTexture(GL_TEXTURE_2D, dst_texture->texture_obj);
 		gl.CopyTexImage2D(texture_target, 0, format, 0, 0, width, height, 0);
 		gl.BindFramebuffer(GL_FRAMEBUFFER, self->bound_framebuffer->framebuffer_obj);
 
@@ -854,6 +856,10 @@ PyObject * MGLContext_get_version_code(MGLContext * self, void * closure) {
 	return PyLong_FromLong(self->version_code);
 }
 
+PyObject * MGLContext_get_extensions(MGLContext * self, void * closure) {
+	return self->extensions;
+}
+
 PyObject * MGLContext_get_info(MGLContext * self, void * closure) {
 	const GLMethods & gl = self->gl;
 
@@ -1388,6 +1394,7 @@ PyGetSetDef MGLContext_tp_getseters[] = {
 
 	{(char *)"patch_vertices", (getter)MGLContext_get_patch_vertices, (setter)MGLContext_set_patch_vertices, 0, 0},
 
+	{(char *)"extensions", (getter)MGLContext_get_extensions, 0, 0, 0},
 	{(char *)"info", (getter)MGLContext_get_info, 0, 0, 0},
 	{(char *)"error", (getter)MGLContext_get_error, 0, 0, 0},
 	{0},
