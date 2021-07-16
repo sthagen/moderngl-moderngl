@@ -1,10 +1,17 @@
-from typing import Dict, Tuple, Union
+import logging
+from typing import Any, Dict, List, Tuple, Union, TYPE_CHECKING
 
+from moderngl.mgl import InvalidObject  # type: ignore
 from .buffer import Buffer
 from .renderbuffer import Renderbuffer
 from .texture import Texture
 
+if TYPE_CHECKING:
+    from .context import Context
+
 __all__ = ['Framebuffer']
+
+LOG = logging.getLogger(__name__)
 
 
 class Framebuffer:
@@ -15,27 +22,45 @@ class Framebuffer:
         Create a :py:class:`Framebuffer` using :py:meth:`Context.framebuffer`.
     '''
 
-    __slots__ = ['mglo', '_color_attachments', '_depth_attachment', '_size', '_samples', '_glo', 'ctx', 'extra']
+    __slots__ = [
+        'mglo', '_color_attachments', '_depth_attachment', '_size', '_samples', '_glo',
+        'ctx', '_is_reference', 'extra'
+    ]
 
     def __init__(self):
         self.mglo = None  #: Internal representation for debug purposes only.
         self._color_attachments = None
         self._depth_attachment = None
         self._size = (None, None)
-        self._samples = None
-        self._glo = None
-        self.ctx = None  #: The context this object belongs to
-        self.extra = None  #: Any - Attribute for storing user defined objects
+        self._samples: int = None
+        self._glo: int = None
+        self.ctx: Context = None  #: The context this object belongs to
+        self._is_reference = None  #: Detected framebuffers we should not delete
+        self.extra: Any = None  #: Attribute for storing user defined objects
         raise TypeError()
 
     def __repr__(self):
-        return '<Framebuffer: %d>' % self.glo
+        if hasattr(self, '_glo'):
+            return '<Framebuffer: %d>' % self._glo
+        else:
+            return "<Framebuffer: INCOMPLETE>"
 
     def __eq__(self, other):
         return type(self) is type(other) and self.mglo is other.mglo
 
     def __hash__(self) -> int:
         return id(self)
+
+    def __del__(self):
+        LOG.debug("Framebuffer.__del__ %s", self)
+
+        # If object was initialized properly (ctx present) and gc_mode is auto
+        if hasattr(self, "ctx") and self.ctx.gc_mode == "auto":
+            # We should never destroy the default framebuffer
+            if self._is_reference:
+                LOG.debug("Attempting to deleted the default framebuffer")
+            else:
+                self.release()
 
     @property
     def viewport(self) -> Tuple[int, int, int, int]:
@@ -246,7 +271,7 @@ class Framebuffer:
         self.ctx.fbo = self
         self.mglo.use()
 
-    def read(self, viewport=None, components=3, *, attachment=0, alignment=1, dtype='f1') -> bytes:
+    def read(self, viewport=None, components=3, *, attachment=0, alignment=1, dtype='f1', clamp=False) -> bytes:
         '''
             Read the content of the framebuffer.
 
@@ -258,12 +283,13 @@ class Framebuffer:
                 attachment (int): The color attachment.
                 alignment (int): The byte alignment of the pixels.
                 dtype (str): Data type.
+                clamp (bool): Clamps floating point values to ``[0.0, 1.0]``
 
             Returns:
                 bytes
         '''
 
-        return self.mglo.read(viewport, components, attachment, alignment, dtype)
+        return self.mglo.read(viewport, components, attachment, alignment, clamp, dtype)
 
     def read_into(self, buffer, viewport=None, components=3, *,
                   attachment=0, alignment=1, dtype='f1', write_offset=0) -> None:
@@ -291,5 +317,8 @@ class Framebuffer:
         '''
             Release the ModernGL object.
         '''
-
-        self.mglo.release()
+        LOG.debug("Framebuffer.release(): %s", self)
+        if not isinstance(self.mglo, InvalidObject):
+            self._color_attachments = None
+            self._depth_attachment = None
+            self.mglo.release()

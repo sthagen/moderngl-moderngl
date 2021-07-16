@@ -16,7 +16,7 @@ ModernGL Objects
 ----------------
 
 .. automethod:: Context.program(vertex_shader, fragment_shader=None, geometry_shader=None, tess_control_shader=None, tess_evaluation_shader=None, varyings=()) -> Program
-.. automethod:: Context.simple_vertex_array(program, buffer, *attributes, index_buffer=None, index_element_size=4) -> VertexArray
+.. automethod:: Context.simple_vertex_array(program, buffer, *attributes, index_buffer=None, index_element_size=4, mode=None) -> VertexArray
 .. automethod:: Context.vertex_array(*args, **kwargs) -> VertexArray
 .. automethod:: Context.buffer(data=None, reserve=0, dynamic=False) -> Buffer
 .. automethod:: Context.texture(size, components, data=None, samples=0, alignment=1, dtype='f1', internal_format=None) -> Texture
@@ -41,8 +41,10 @@ Methods
 
 .. automethod:: Context.clear(red=0.0, green=0.0, blue=0.0, alpha=0.0, depth=1.0, viewport=None, color=None)
 .. automethod:: Context.enable_only(flags)
-.. automethod:: Context.enable(flags)
-.. automethod:: Context.disable(flags)
+.. automethod:: Context.enable(flags: int)
+.. automethod:: Context.disable(flags: int)
+.. automethod:: Context.enable_direct(enum: int)
+.. automethod:: Context.disable_direct(enum: int)
 .. automethod:: Context.finish()
 .. automethod:: Context.copy_buffer(dst, src, size=-1, read_offset=0, write_offset=0)
 .. automethod:: Context.copy_framebuffer(dst, src)
@@ -53,6 +55,7 @@ Methods
 Attributes
 ----------
 
+.. autoattribute:: Context.gc_mode
 .. autoattribute:: Context.line_width
 .. autoattribute:: Context.point_size
 .. autoattribute:: Context.depth_func

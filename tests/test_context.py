@@ -76,10 +76,11 @@ class ContextTests(TestCase):
 
     def test_extensions(self):
         ctx = moderngl.create_context(standalone=True)
-        print(ctx.extensions)
-        self.assertTrue("GL_ARB_gpu_shader5" in ctx.extensions)
-        self.assertTrue("GL_ARB_transform_feedback2" in ctx.extensions)
-        self.assertTrue("GL_ARB_shader_subroutine" in ctx.extensions)
+        # self.assertTrue("GL_ARB_vertex_array_object" in ctx.extensions)
+        # self.assertTrue("GL_ARB_transform_feedback2" in ctx.extensions)
+        # self.assertTrue("GL_ARB_shader_subroutine" in ctx.extensions)
+        self.assertIsInstance(ctx.extensions, set)
+        self.assertTrue(len(ctx.extensions) > 0)
         ctx.release()
 
     def test_attributes(self):
@@ -142,3 +143,15 @@ class ContextTests(TestCase):
         # Provoking vertex
         self.assertIsInstance(ctx.FIRST_VERTEX_CONVENTION, int)
         self.assertIsInstance(ctx.LAST_VERTEX_CONVENTION, int)
+
+    def test_enable_direct(self):
+        ctx = moderngl.create_context(standalone=True)
+        ctx.error  # consume error during initialization
+        # We already support this, but it's a safe value
+        GL_PROGRAM_POINT_SIZE = 0x8642
+
+        ctx.enable_direct(GL_PROGRAM_POINT_SIZE)
+        self.assertEqual(ctx.error, "GL_NO_ERROR")
+
+        ctx.disable_direct(GL_PROGRAM_POINT_SIZE)
+        self.assertEqual(ctx.error, "GL_NO_ERROR")

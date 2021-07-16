@@ -213,6 +213,20 @@ class TestCase(unittest.TestCase):
         self.assertAlmostEqual(data[2], 1.0)
         self.assertAlmostEqual(data[3], 0.25, places=2)
 
+    def test_sampler_1d(self):
+        prog = self.ctx.program(
+            vertex_shader="""
+            #version 330
+            uniform sampler1D tex;
+            out vec4 color;
+            void main() {
+                color = texelFetch(tex, 0, 0);
+            }
+            """,
+            varyings=["color"],
+        )
+        self.assertIn("tex", prog)
+
 
 if __name__ == '__main__':
     unittest.main()

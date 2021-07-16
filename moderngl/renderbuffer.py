@@ -1,4 +1,9 @@
+import logging
+from moderngl.mgl import InvalidObject  # type: ignore
+
 __all__ = ['Renderbuffer']
+
+LOG = logging.getLogger(__name__)
 
 
 class Renderbuffer:
@@ -30,13 +35,21 @@ class Renderbuffer:
         raise TypeError()
 
     def __repr__(self):
-        return '<Renderbuffer: %d>' % self.glo
+        if hasattr(self, '_glo'):
+            return f"<{self.__class__.__name__}: {self._glo}>"
+        else:
+            return f"<{self.__class__.__name__}: INCOMPLETE>"
 
     def __eq__(self, other):
         return type(self) is type(other) and self.mglo is other.mglo
 
     def __hash__(self) -> int:
         return id(self)
+
+    def __del__(self):
+        LOG.debug(f"{self.__class__.__name__}.__del__ {self}")
+        if hasattr(self, "ctx") and self.ctx.gc_mode == "auto":
+            self.release()
 
     @property
     def width(self) -> int:
@@ -107,5 +120,6 @@ class Renderbuffer:
         '''
             Release the ModernGL object.
         '''
-
-        self.mglo.release()
+        LOG.debug(f"{self.__class__.__name__}.release() {self}")
+        if not isinstance(self.mglo, InvalidObject):
+            self.mglo.release()

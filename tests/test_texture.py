@@ -1,5 +1,6 @@
 import struct
 import unittest
+import platform
 
 import moderngl
 
@@ -37,6 +38,7 @@ class TestCase(unittest.TestCase):
         cls.vao = cls.ctx.simple_vertex_array(prog, vbo, 'vert')
 
     def test_1(self):
+        self.assertEqual(self.vao.mode, moderngl.TRIANGLES)
         fbo = self.ctx.framebuffer(self.ctx.renderbuffer((16, 16)))
         pixels = struct.pack('16B', 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 0, 0, 0, 255)
         texture = self.ctx.texture((2, 2), 4, pixels)
@@ -149,6 +151,10 @@ class TestCase(unittest.TestCase):
 
     def test_override_internalformat(self):
         """Ensure no errors occur when overriding internalformat"""
+        self.ctx.error
+        if not "GL_EXT_texture_sRGB" in self.ctx.extensions:
+            self.skipTest('GL_EXT_texture_sRGB extension not supported')
+
         GL_SRGB8 = 0x8C41
         pixels = struct.pack('16B', 255, 0, 0, 255, 0, 255, 0, 255, 255, 0, 0, 255, 0, 255, 0, 255)
         texture = self.ctx.texture((2, 2), 4, pixels, internal_format=GL_SRGB8)
