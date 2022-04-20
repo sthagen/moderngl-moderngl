@@ -1,7 +1,6 @@
 Texture
 =======
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Texture
@@ -9,21 +8,21 @@ Texture
 Create
 ------
 
-.. automethod:: Context.texture(size, components, data=None, samples=0, alignment=1, dtype='f1', internal_format=None) -> Texture
+.. automethod:: Context.texture(size: Tuple[int, int], components: int, data: Optional[Any] = None, samples: int = 0, alignment: int = 1, dtype: str = 'f1', internal_format: int = None) -> Texture
     :noindex:
 
-.. automethod:: Context.depth_texture(size, data=None, samples=0, alignment=4) -> Texture
+.. automethod:: Context.depth_texture(size: Tuple[int, int], data: Optional[Any] = None, samples: int = 0, alignment: int = 4) -> Texture
     :noindex:
 
 Methods
 -------
 
-.. automethod:: Texture.read(level=0, alignment=1) -> bytes
-.. automethod:: Texture.read_into(buffer, level=0, alignment=1, write_offset=0)
-.. automethod:: Texture.write(data, viewport=None, level=0, alignment=1)
-.. automethod:: Texture.build_mipmaps(base=0, max_level=1000)
+.. automethod:: Texture.read(level: int = 0, alignment: int = 1) -> bytes
+.. automethod:: Texture.read_into(buffer: Any, level: int = 0, alignment: int = 1, write_offset: int = 0)
+.. automethod:: Texture.write(data: Any, viewport: Union[Tuple[int, int], Tuple[int, int, int, int], NoneType] = None, level: int = 0, alignment: int = 1)
+.. automethod:: Texture.build_mipmaps(base: int = 0, max_level: int = 1000)
 .. automethod:: Texture.bind_to_image(unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0)
-.. automethod:: Texture.use(location=0)
+.. automethod:: Texture.use(location: int = 0)
 .. automethod:: Texture.release()
 
 Attributes

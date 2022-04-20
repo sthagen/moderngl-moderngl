@@ -530,12 +530,7 @@ PyObject * MGLFramebuffer_read(MGLFramebuffer * self, PyObject * args) {
 		return 0;
 	}
 
-	if (dtype_size != 2) {
-		MGLError_Set("invalid dtype");
-		return 0;
-	}
-
-	MGLDataType * data_type = from_dtype(dtype);
+	MGLDataType * data_type = from_dtype(dtype, dtype_size);
 
 	if (!data_type) {
 		MGLError_Set("invalid dtype");
@@ -651,12 +646,7 @@ PyObject * MGLFramebuffer_read_into(MGLFramebuffer * self, PyObject * args) {
 		return 0;
 	}
 
-	if (dtype_size != 2) {
-		MGLError_Set("invalid dtype");
-		return 0;
-	}
-
-	MGLDataType * data_type = from_dtype(dtype);
+	MGLDataType * data_type = from_dtype(dtype, dtype_size);
 
 	if (!data_type) {
 		MGLError_Set("invalid dtype");
@@ -1148,6 +1138,6 @@ void MGLFramebuffer_Invalidate(MGLFramebuffer * framebuffer) {
 		delete[] framebuffer->color_mask;
 	}
 
-	Py_TYPE(framebuffer) = &MGLInvalidObject_Type;
+	Py_SET_TYPE(framebuffer, &MGLInvalidObject_Type);
 	Py_DECREF(framebuffer);
 }

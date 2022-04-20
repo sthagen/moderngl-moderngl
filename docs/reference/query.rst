@@ -1,7 +1,6 @@
 Query
 =====
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Query
@@ -9,7 +8,7 @@ Query
 Create
 ------
 
-.. automethod:: Context.query(samples=False, any_samples=False, time=False, primitives=False) -> Query
+.. automethod:: Context.query(samples: bool = False, any_samples: bool = False, time: bool = False, primitives: bool = False) -> Query
     :noindex:
 
 Attributes

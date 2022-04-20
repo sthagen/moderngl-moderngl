@@ -1,7 +1,6 @@
 Uniform
 =======
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Uniform
@@ -10,7 +9,7 @@ Methods
 -------
 
 .. automethod:: Uniform.read() -> bytes
-.. automethod:: Uniform.write(data)
+.. automethod:: Uniform.write(data: Any)
 
 Attributes
 ----------

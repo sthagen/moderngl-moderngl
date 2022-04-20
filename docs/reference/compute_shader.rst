@@ -9,18 +9,18 @@ ComputeShader
 Create
 ------
 
-.. automethod:: Context.compute_shader(source) -> ComputeShader
+.. automethod:: Context.compute_shader(source: str) -> ComputeShader
     :noindex:
 
 Methods
 -------
 
-.. automethod:: ComputeShader.run(group_x=1, group_y=1, group_z=1)
-.. automethod:: ComputeShader.get(key, default) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
+.. automethod:: ComputeShader.run(group_x: int = 1, group_y: int = 1, group_z: int = 1)
+.. automethod:: ComputeShader.get(key: str, default: Any) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
 .. automethod:: ComputeShader.release()
-.. automethod:: ComputeShader.__eq__(other)
-.. automethod:: ComputeShader.__getitem__(key) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
-.. automethod:: ComputeShader.__setitem__(key, value)
+.. automethod:: ComputeShader.__eq__(other: Any)
+.. automethod:: ComputeShader.__getitem__(key: str) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
+.. automethod:: ComputeShader.__setitem__(key: str, value: Any)
 .. automethod:: ComputeShader.__iter__() -> Generator[str, NoneType, NoneType]
 
 Attributes

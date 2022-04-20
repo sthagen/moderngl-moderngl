@@ -5,9 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-# 5.7.0
+# 5.7.0 [NOT RELEASED YET]
 
-* Integer textures is not using `NEAREST` interpolation by default
+* Added support for `glPolygonOffset`. The factors and units can be set using `Context.polygon_offset`
+* Added support for normalized signed and unsigned integer textures. `ni1`, `nu1`, `ni2` and `nu2`
+  are the new dtypes for these.
+* Added `TextureCube.bind_to_image` so we can easily access cube textures in compute shaders
+* Added `Texture3D.bind_to_image` so we can easily access 3D textures in compute shaders
+* Added `TextureArray.bind_to_image` so we can easily access texture arrays in compute shaders
+* Integer textures now use `NEAREST` interpolation by default. This was causing
+  issues with some drivers.
 * Added `Program.is_transform` exposing if the program has a fragment shader or not
 * Added `VertexArray.mode` and a `mode` argument in `Context.vertex_array`.
   This is now the default rendering mode when no mode parameter is passed
@@ -15,6 +22,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 * Added support for 1D sampler in `Uniform`
 * Added direct access to `glEnable` / `glDisable` in `Context.enable_direct` / `Context.disable_direct`.
   This can be used to enabled capabilities not supported by ModernGL.
+* `Framebuffer.read()` now has a `clamp` (bool) parameter. If enabled, floating point data
+  will clamp to `[0.0, 1.0]`. Clamping is disabled by default.
+* VertexArray: Removed "the first vertex attribute must not be a per instance attribute" limitation
+* Fixed a crash when reading `ctx.provoking_vertex`
 * Docstring improvements
 * Documentation improvements
 

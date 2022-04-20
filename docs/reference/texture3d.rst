@@ -1,7 +1,6 @@
 Texture3D
 =========
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Texture3D
@@ -9,17 +8,18 @@ Texture3D
 Create
 ------
 
-.. automethod:: Context.texture3d(size, components, data=None, alignment=1, dtype='f1') -> Texture3D
+.. automethod:: Context.texture3d(size: Tuple[int, int, int], components: int, data: Optional[Any] = None, alignment: int = 1, dtype: str = 'f1') -> Texture3D
     :noindex:
 
 Methods
 -------
 
-.. automethod:: Texture3D.read(alignment=1) -> bytes
-.. automethod:: Texture3D.read_into(buffer, alignment=1, write_offset=0)
-.. automethod:: Texture3D.write(data, viewport=None, alignment=1)
-.. automethod:: Texture3D.build_mipmaps(base=0, max_level=1000)
-.. automethod:: Texture3D.use(location=0)
+.. automethod:: Texture3D.read(alignment: int = 1) -> bytes
+.. automethod:: Texture3D.read_into(buffer: Any, alignment: int = 1, write_offset: int = 0)
+.. automethod:: Texture3D.write(data: Any, viewport: Union[Tuple[int, int, int], Tuple[int, int, int, int, int, int], NoneType] = None, alignment: int = 1)
+.. automethod:: Texture3D.build_mipmaps(base: int = 0, max_level: int = 1000)
+.. automethod:: Texture3D.bind_to_image(unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0)
+.. automethod:: Texture3D.use(location: int = 0)
 .. automethod:: Texture3D.release()
 
 Attributes

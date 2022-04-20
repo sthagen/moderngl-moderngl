@@ -73,11 +73,6 @@ PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
 			return 0;
 		}
 
-		if (i == 0 && format_info.divisor) {
-			MGLError_Set("the first vertex attribute must not be a per instance attribute");
-			return 0;
-		}
-
 		int attributes_len = (int)PyTuple_GET_SIZE(tuple) - 2;
 
 		if (!attributes_len) {
@@ -707,7 +702,7 @@ void MGLVertexArray_Invalidate(MGLVertexArray * array) {
 	const GLMethods & gl = array->context->gl;
 	gl.DeleteVertexArrays(1, (GLuint *)&array->vertex_array_obj);
 
-	Py_TYPE(array) = &MGLInvalidObject_Type;
+	Py_SET_TYPE(array, &MGLInvalidObject_Type);
 	Py_DECREF(array->program);
 	Py_XDECREF(array->index_buffer);
 	Py_DECREF(array);

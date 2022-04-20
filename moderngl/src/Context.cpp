@@ -699,8 +699,8 @@ int MGLContext_set_multisample(MGLContext * self, PyObject * value) {
 	return -1;
 }
 
-int MGLContext_get_provoking_vertex(MGLContext * self) {
-	return self->provoking_vertex;
+PyObject * MGLContext_get_provoking_vertex(MGLContext * self) {
+	return PyLong_FromLong(self->provoking_vertex);
 }
 
 int MGLContext_set_provoking_vertex(MGLContext * self, PyObject * value) {
@@ -713,6 +713,33 @@ int MGLContext_set_provoking_vertex(MGLContext * self, PyObject * value) {
 		return 0;
 	}
 	return -1;
+}
+
+PyObject * MGLContext_get_polygon_offset(MGLContext * self) {
+	return Py_BuildValue("ff", self->polygon_offset_factor, self->polygon_offset_units);
+}
+
+int MGLContext_set_polygon_offset(MGLContext * self, PyObject * value) {
+    if (!PyTuple_CheckExact(value) || PyTuple_Size(value) != 2) {
+        return -1;
+    }
+    float polygon_offset_factor = (float)PyFloat_AsDouble(PyTuple_GetItem(value, 0));
+    float polygon_offset_units = (float)PyFloat_AsDouble(PyTuple_GetItem(value, 1));
+
+	const GLMethods & gl = self->gl;
+    if (polygon_offset_factor || polygon_offset_units) {
+        gl.Enable(GL_POLYGON_OFFSET_POINT);
+        gl.Enable(GL_POLYGON_OFFSET_LINE);
+        gl.Enable(GL_POLYGON_OFFSET_FILL);
+    } else {
+        gl.Disable(GL_POLYGON_OFFSET_POINT);
+        gl.Disable(GL_POLYGON_OFFSET_LINE);
+        gl.Disable(GL_POLYGON_OFFSET_FILL);
+    }
+    gl.PolygonOffset(polygon_offset_factor, polygon_offset_units);
+    self->polygon_offset_factor = polygon_offset_factor;
+    self->polygon_offset_units = polygon_offset_units;
+    return 0;
 }
 
 PyObject * MGLContext_get_default_texture_unit(MGLContext * self) {
@@ -1107,6 +1134,9 @@ PyObject * MGLContext_get_info(MGLContext * self, void * closure) {
 		int gl_max_geometry_uniform_components = 0;
 		gl.GetIntegerv(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, &gl_max_geometry_uniform_components);
 
+		int gl_max_geometry_output_vertices = 0;
+		gl.GetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &gl_max_geometry_output_vertices);
+
 		int gl_max_integer_samples = 0;
 		gl.GetIntegerv(GL_MAX_INTEGER_SAMPLES, &gl_max_integer_samples);
 
@@ -1198,6 +1228,7 @@ PyObject * MGLContext_get_info(MGLContext * self, void * closure) {
 		PyDict_SetItemString(info, "GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS", PyLong_FromLong(gl_max_geometry_texture_image_units));
 		PyDict_SetItemString(info, "GL_MAX_GEOMETRY_UNIFORM_BLOCKS", PyLong_FromLong(gl_max_geometry_uniform_blocks));
 		PyDict_SetItemString(info, "GL_MAX_GEOMETRY_UNIFORM_COMPONENTS", PyLong_FromLong(gl_max_geometry_uniform_components));
+		PyDict_SetItemString(info, "GL_MAX_GEOMETRY_OUTPUT_VERTICES", PyLong_FromLong(gl_max_geometry_output_vertices));
 		PyDict_SetItemString(info, "GL_MAX_INTEGER_SAMPLES", PyLong_FromLong(gl_max_integer_samples));
 		PyDict_SetItemString(info, "GL_MAX_SAMPLES", PyLong_FromLong(gl_max_samples));
 		PyDict_SetItemString(info, "GL_MAX_RECTANGLE_TEXTURE_SIZE", PyLong_FromLong(gl_max_rectangle_texture_size));
@@ -1415,6 +1446,7 @@ PyGetSetDef MGLContext_tp_getseters[] = {
 	{(char *)"multisample", (getter)MGLContext_get_multisample, (setter)MGLContext_set_multisample, 0, 0},
 
 	{(char *)"provoking_vertex", (getter)MGLContext_get_provoking_vertex, (setter)MGLContext_set_provoking_vertex, 0, 0},
+	{(char *)"polygon_offset", (getter)MGLContext_get_polygon_offset, (setter)MGLContext_set_polygon_offset, 0, 0},
 
 	{(char *)"default_texture_unit", (getter)MGLContext_get_default_texture_unit, (setter)MGLContext_set_default_texture_unit, 0, 0},
 	{(char *)"max_samples", (getter)MGLContext_get_max_samples, 0, 0, 0},
@@ -1486,6 +1518,6 @@ void MGLContext_Invalidate(MGLContext * context) {
 
 	// TODO: decref
 
-	Py_TYPE(context) = &MGLInvalidObject_Type;
+	Py_SET_TYPE(context, &MGLInvalidObject_Type);
 	Py_DECREF(context);
 }

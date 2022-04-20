@@ -1,7 +1,6 @@
 Sampler
 =======
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Sampler
@@ -9,14 +8,14 @@ Sampler
 Create
 ------
 
-.. automethod:: Context.sampler(repeat_x=True, repeat_y=True, repeat_z=True, filter=None, anisotropy=1.0, compare_func='?', border_color=None, min_lod=-1000.0, max_lod=1000.0, texture=None) -> Sampler
+.. automethod:: Context.sampler(repeat_x: bool = True, repeat_y: bool = True, repeat_z: bool = True, filter: Tuple[int, int] = None, anisotropy: float = 1.0, compare_func: str = '?', border_color: Tuple[float, float, float, float] = None, min_lod: float = -1000.0, max_lod: float = 1000.0, texture: Optional[Texture] = None) -> Sampler
 
 Methods
 -------
 
-.. automethod:: Sampler.use(location=0)
-.. automethod:: Sampler.clear(location=0)
-.. automethod:: Sampler.assign(index)
+.. automethod:: Sampler.use(location: int = 0)
+.. automethod:: Sampler.clear(location: int = 0)
+.. automethod:: Sampler.assign(index: int) -> Tuple[ForwardRef('Sampler'), int]
 .. automethod:: Sampler.release()
 
 Attributes

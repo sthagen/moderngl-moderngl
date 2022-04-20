@@ -1,7 +1,6 @@
 Program
 =======
 
-.. py:module:: moderngl
 .. py:currentmodule:: moderngl
 
 .. autoclass:: moderngl.Program
@@ -9,17 +8,17 @@ Program
 Create
 ------
 
-.. automethod:: Context.program(vertex_shader, fragment_shader=None, geometry_shader=None, tess_control_shader=None, tess_evaluation_shader=None, varyings=()) -> Program
+.. automethod:: Context.program(vertex_shader: str, fragment_shader: Optional[str] = None, geometry_shader: Optional[str] = None, tess_control_shader: Optional[str] = None, tess_evaluation_shader: Optional[str] = None, varyings: Tuple[str, ...] = ()) -> Program
     :noindex:
 
 Methods
 -------
 
-.. automethod:: Program.get(key, default) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
-.. automethod:: Program.__getitem__(key) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
-.. automethod:: Program.__setitem__(key, value)
+.. automethod:: Program.get(key: str, default: Any) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
+.. automethod:: Program.__getitem__(key: str) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]
+.. automethod:: Program.__setitem__(key: str, value: Any)
 .. automethod:: Program.__iter__() -> Generator[str, NoneType, NoneType]
-.. automethod:: Program.__eq__(other) -> bool
+.. automethod:: Program.__eq__(other: Any) -> bool
 .. automethod:: Program.release()
 
 
