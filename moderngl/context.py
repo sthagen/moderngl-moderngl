@@ -2,7 +2,7 @@ import warnings
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional, Set, Tuple, Union
 
-from moderngl.mgl import InvalidObject  # type: ignore
+from _moderngl import InvalidObject
 
 from .buffer import Buffer
 from .compute_shader import ComputeShader
@@ -1201,7 +1201,7 @@ class Context:
         samples: int = 0,
         alignment: int = 1,
         dtype: str = 'f1',
-        internal_format: int = None,
+        internal_format: Optional[int] = None,
     ) -> 'Texture':
         """
         Create a :py:class:`Texture` object.
@@ -1307,6 +1307,7 @@ class Context:
         *,
         alignment: int = 1,
         dtype: str = 'f1',
+        internal_format: Optional[int] = None,
     ) -> 'TextureCube':
         """
         Create a :py:class:`TextureCube` object.
@@ -1324,12 +1325,13 @@ class Context:
         Keyword Args:
             alignment (int): The byte alignment 1, 2, 4 or 8.
             dtype (str): Data type.
+            internal_format (int): Override the internalformat of the texture (IF needed)
 
         Returns:
             :py:class:`TextureCube` object
         """
         res = TextureCube.__new__(TextureCube)
-        res.mglo, res._glo = self.mglo.texture_cube(size, components, data, alignment, dtype)
+        res.mglo, res._glo = self.mglo.texture_cube(size, components, data, alignment, dtype, internal_format or 0)
         res._size = size
         res._components = components
         res._dtype = dtype
@@ -1450,7 +1452,7 @@ class Context:
         members = program._members
         index_buffer_mglo = None if index_buffer is None else index_buffer.mglo
         mgl_content = tuple(
-            (a.mglo, b) + tuple(getattr(members.get(x), 'mglo', None) for x in c)
+            (a.mglo, b) + tuple(members.get(x) for x in c)
             for a, b, *c in content
         )
 
@@ -1553,39 +1555,11 @@ class Context:
             fragment_outputs = {}
 
         res = Program.__new__(Program)
-        res.mglo, ls1, ls2, ls3, ls4, ls5, res._subroutines, res._geom, res._glo = self.mglo.program(
+        res.mglo, res._members, res._subroutines, res._geom, res._glo = self.mglo.program(
             vertex_shader, fragment_shader, geometry_shader, tess_control_shader, tess_evaluation_shader,
             varyings, fragment_outputs, varyings_capture_mode == 'interleaved'
         )
 
-        members = {}
-
-        for item in ls1:
-            obj = Attribute.__new__(Attribute)
-            obj.mglo, obj._location, obj._array_length, obj._dimension, obj._shape, obj._name = item
-            members[obj.name] = obj
-
-        for item in ls2:
-            obj = Varying.__new__(Varying)
-            obj._number, obj._array_length, obj._dimension, obj._name = item
-            members[obj.name] = obj
-
-        for item in ls3:
-            obj = Uniform.__new__(Uniform)
-            obj.mglo, obj._location, obj._array_length, obj._dimension, obj._name = item
-            members[obj.name] = obj
-
-        for item in ls4:
-            obj = UniformBlock.__new__(UniformBlock)
-            obj.mglo, obj._index, obj._size, obj._name = item
-            members[obj.name] = obj
-
-        for item in ls5:
-            obj = Subroutine.__new__(Subroutine)
-            obj._index, obj._name = item
-            members[obj.name] = obj
-
-        res._members = members
         res._is_transform = fragment_shader is None
         res.ctx = self
         res.extra = None
@@ -1805,21 +1779,8 @@ class Context:
             :py:class:`ComputeShader` object
         """
         res = ComputeShader.__new__(ComputeShader)
-        res.mglo, ls1, ls2, ls3, ls4, res._glo = self.mglo.compute_shader(source)
+        res.mglo, res._members, res._glo = self.mglo.compute_shader(source)
 
-        members = {}
-
-        for item in ls1:
-            obj = Uniform.__new__(Uniform)
-            obj.mglo, obj._location, obj._array_length, obj._dimension, obj._name = item
-            members[obj.name] = obj
-
-        for item in ls2:
-            obj = UniformBlock.__new__(UniformBlock)
-            obj.mglo, obj._index, obj._size, obj._name = item
-            members[obj.name] = obj
-
-        res._members = members
         res.ctx = self
         res.extra = None
         return res
@@ -1955,8 +1916,9 @@ class Context:
 
         Standalone contexts can normally be released.
         """
-        if not isinstance(self.mglo, InvalidObject):
+        if self.mglo is not None:
             self.mglo.release()
+            self.mglo = InvalidObject()
 
 
 def create_context(
