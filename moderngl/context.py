@@ -9,7 +9,7 @@ from .compute_shader import ComputeShader
 from .conditional_render import ConditionalRender
 from .framebuffer import Framebuffer
 from .program import Program, detect_format
-from .program_members import (
+from .program_members import (  # noqa: F401
     Attribute,
     Subroutine,
     Uniform,
@@ -27,7 +27,7 @@ from .texture_cube import TextureCube
 from .vertex_array import VertexArray
 
 try:
-    from moderngl import mgl
+    from moderngl import mgl  # type: ignore
 except ImportError:
     pass
 
@@ -1547,7 +1547,7 @@ class Context:
             raise ValueError('varyings_capture_mode must be interleaved or separate')
 
         if type(varyings) is str:
-            varyings = (varyings,)
+            varyings = (varyings,)  # type: ignore
 
         varyings = tuple(varyings)
 
@@ -1624,6 +1624,8 @@ class Context:
 
         if framebuffer is None:
             framebuffer = self.screen
+            if framebuffer is None:
+                raise RuntimeError('A framebuffer must be specified')
 
         mgl_textures = tuple((tex.mglo, idx) for tex, idx in textures)
         mgl_uniform_buffers = tuple((buf.mglo, idx) for buf, idx in uniform_buffers)
@@ -1958,7 +1960,7 @@ def create_context(
     if share is True:
         mode = 'share'
 
-    from moderngl import mgl
+    from moderngl import mgl  # type: ignore
 
     ctx = Context.__new__(Context)
     ctx.mglo, ctx.version_code = mgl.create_context(glversion=require, mode=mode, **settings)
