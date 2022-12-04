@@ -1092,7 +1092,13 @@ PyObject * MGLContext_get_version_code(MGLContext * self, void * closure) {
 }
 
 PyObject * MGLContext_get_extensions(MGLContext * self, void * closure) {
+    Py_INCREF(self->extensions);
 	return self->extensions;
+}
+
+PyObject * MGLContext_get_context(MGLContext * self, void * closure) {
+    Py_INCREF(self->ctx);
+	return self->ctx;
 }
 
 PyObject * MGLContext_get_info(MGLContext * self, void * closure) {
