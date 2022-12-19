@@ -1,51 +1,49 @@
-import unittest
-
-from common import get_context
+import pytest
 
 
-class TestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.ctx = get_context()
-
-    def test_renderbuffer(self):
-        rbo = self.ctx.renderbuffer((4, 4))
-        self.assertTupleEqual(rbo.size, (4, 4))
-        self.assertEqual(rbo.samples, 0)
-        self.assertEqual(rbo.depth, False)
-
-    def test_multisample_renderbuffer(self):
-        if self.ctx.max_samples < 2:
-            self.skipTest('multisampling is not supported')
-
-        rbo = self.ctx.renderbuffer((4, 4), samples=2)
-        self.assertTupleEqual(rbo.size, (4, 4))
-        self.assertEqual(rbo.samples, 2)
-        self.assertEqual(rbo.depth, False)
-
-    def test_depth_renderbuffer(self):
-        rbo = self.ctx.depth_renderbuffer((4, 4))
-        self.assertTupleEqual(rbo.size, (4, 4))
-        self.assertEqual(rbo.samples, 0)
-        self.assertEqual(rbo.depth, True)
-
-    def test_multisample_depth_renderbuffer(self):
-        if self.ctx.max_samples < 2:
-            self.skipTest('multisampling is not supported')
-
-        rbo = self.ctx.depth_renderbuffer((4, 4), samples=2)
-        self.assertTupleEqual(rbo.size, (4, 4))
-        self.assertEqual(rbo.samples, 2)
-        self.assertEqual(rbo.depth, True)
-
-    def test_renderbuffer_invalid_samples(self):
-        if self.ctx.max_samples < 2:
-            self.skipTest('multisampling is not supported')
-
-        with self.assertRaisesRegex(Exception, 'sample'):
-            self.ctx.renderbuffer((4, 4), samples=3)
+def test_renderbuffer(ctx):
+    rbo = ctx.renderbuffer((4, 8))
+    assert rbo.size == (4, 8)
+    assert rbo.width == 4
+    assert rbo.height == 8
+    assert rbo.samples == 0
+    assert rbo.depth is False
+    assert rbo.components == 4
+    assert rbo.dtype == 'f1'
+    assert hash(rbo) == id(rbo)
+    assert rbo == rbo
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_multisample_renderbuffer(ctx):
+    if ctx.max_samples < 2:
+        pytest.skip('multisampling is not supported')
+
+    rbo = ctx.renderbuffer((4, 4), samples=2)
+    assert rbo.size == (4, 4)
+    assert rbo.samples == 2
+    assert rbo.depth is False
+
+
+def test_depth_renderbuffer(ctx):
+    rbo = ctx.depth_renderbuffer((4, 4))
+    assert rbo.size == (4, 4)
+    assert rbo.samples == 0
+    assert rbo.depth is True
+
+
+def test_multisample_depth_renderbuffer(ctx):
+    if ctx.max_samples < 2:
+        pytest.skip('multisampling is not supported')
+
+    rbo = ctx.depth_renderbuffer((4, 4), samples=2)
+    assert rbo.size == (4, 4)
+    assert rbo.samples == 2
+    assert rbo.depth is True
+
+
+def test_renderbuffer_invalid_samples(ctx):
+    if ctx.max_samples < 2:
+        pytest.skip('multisampling is not supported')
+
+    with pytest.raises(Exception, match='samples is invalid'):
+        ctx.renderbuffer((4, 4), samples=3)

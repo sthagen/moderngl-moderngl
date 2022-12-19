@@ -74,34 +74,19 @@ extra_linker_args = {
     'android': [],
 }
 
+if os.getenv('MODERNGL_COVERAGE'):
+    extra_compile_args[target] += ['-O0', '--coverage']
+    extra_linker_args[target] += ['-O0', '--coverage']
+
 mgl = Extension(
     name='moderngl.mgl',
-    include_dirs=['src', 'moderngl', 'moderngl/mgl'],
     define_macros=[
         ('PY_SSIZE_T_CLEAN', None),
     ],
     libraries=libraries[target],
     extra_compile_args=extra_compile_args[target],
     extra_link_args=extra_linker_args[target],
-    sources=[
-        'moderngl/src/Sampler.cpp',
-        'moderngl/src/Buffer.cpp',
-        'moderngl/src/BufferFormat.cpp',
-        'moderngl/src/ComputeShader.cpp',
-        'moderngl/src/Context.cpp',
-        'moderngl/src/DataType.cpp',
-        'moderngl/src/Framebuffer.cpp',
-        'moderngl/src/ModernGL.cpp',
-        'moderngl/src/Program.cpp',
-        'moderngl/src/Query.cpp',
-        'moderngl/src/Renderbuffer.cpp',
-        'moderngl/src/Scope.cpp',
-        'moderngl/src/Texture.cpp',
-        'moderngl/src/Texture3D.cpp',
-        'moderngl/src/TextureArray.cpp',
-        'moderngl/src/TextureCube.cpp',
-        'moderngl/src/VertexArray.cpp',
-    ],
+    sources=['src/moderngl.cpp'],
 )
 
 short_description = 'ModernGL: High performance rendering for Python 3'
@@ -143,7 +128,7 @@ project_urls = {
 
 setup(
     name='moderngl',
-    version='5.7.3',
+    version='5.8.0',
     description=short_description,
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -154,7 +139,9 @@ setup(
     project_urls=project_urls,
     classifiers=classifiers,
     keywords=keywords,
-    packages=['moderngl'],
+    include_package_data=True,
+    package_data={'moderngl-stubs': ['__init__.pyi']},
+    packages=['moderngl', 'moderngl-stubs'],
     py_modules=['_moderngl'],
     ext_modules=[mgl],
     platforms=['any'],

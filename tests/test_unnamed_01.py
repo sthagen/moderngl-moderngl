@@ -1,63 +1,50 @@
 import struct
-import unittest
-
+import pytest
 import moderngl
 
-from common import get_context
 
+def test_1(ctx):
+    prog = ctx.program(
+        vertex_shader='''
+            #version 330
 
-class TestBuffer(unittest.TestCase):
+            in mat2 in_m;
+            in vec2 in_v;
 
-    @classmethod
-    def setUpClass(cls):
-        cls.ctx = get_context()
+            out vec2 out_v;
 
-        cls.prog = cls.ctx.program(
-            vertex_shader='''
-                #version 330
+            uniform float mult;
 
-                in mat2 in_m;
-                in vec2 in_v;
+            void main() {
+                out_v = in_m * in_v * mult;
+            }
+        ''',
+        varyings=['out_v']
+    )
 
-                out vec2 out_v;
+    buf_m = ctx.buffer(struct.pack('4f', 1, 1, 1, 2))
+    buf_v = ctx.buffer(struct.pack('2f', 4, 7))
+    res = ctx.buffer(reserve=buf_v.size)
 
-                uniform float mult;
+    vao = ctx.vertex_array(prog, [
+        (buf_m, '4f', 'in_m'),
+        (buf_v, '2f', 'in_v'),
+    ])
 
-                void main() {
-                    out_v = in_m * in_v * mult;
-                }
-            ''',
-            varyings=['out_v']
-        )
+    prog['mult'].value = 0.0
+    vao.transform(res, moderngl.POINTS)
+    x, y = struct.unpack('2f', res.read())
+    assert pytest.approx(x) == 0.0
+    assert pytest.approx(y) == 0.0
 
-    def test_1(self):
-        buf_m = self.ctx.buffer(struct.pack('4f', 1, 1, 1, 2))
-        buf_v = self.ctx.buffer(struct.pack('2f', 4, 7))
-        res = self.ctx.buffer(reserve=buf_v.size)
+    prog['mult'].value = 1.0
+    vao.transform(res, moderngl.POINTS)
+    x, y = struct.unpack('2f', res.read())
+    assert pytest.approx(x) == 11.0
+    assert pytest.approx(y) == 18.0
 
-        vao = self.ctx.vertex_array(self.prog, [
-            (buf_m, '4f', 'in_m'),
-            (buf_v, '2f', 'in_v'),
-        ])
-
-        self.prog['mult'].value = 0.0
-        vao.transform(res, moderngl.POINTS)
-        x, y = struct.unpack('2f', res.read())
-        self.assertAlmostEqual(x, 0.0)
-        self.assertAlmostEqual(y, 0.0)
-
-        self.prog['mult'].value = 1.0
-        vao.transform(res, moderngl.POINTS)
-        x, y = struct.unpack('2f', res.read())
-        self.assertAlmostEqual(x, 11.0)
-        self.assertAlmostEqual(y, 18.0)
-
-        self.prog['mult'].value = 2.0
-        vao.transform(res, moderngl.POINTS)
-        x, y = struct.unpack('2f', res.read())
-        self.assertAlmostEqual(x, 22.0)
-        self.assertAlmostEqual(y, 36.0)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    prog['mult'].value = 2.0
+    vao.transform(res, moderngl.POINTS)
+    x, y = struct.unpack('2f', res.read())
+    assert pytest.approx(x) == 22.0
+    assert pytest.approx(y) == 36.0
