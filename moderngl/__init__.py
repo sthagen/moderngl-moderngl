@@ -74,6 +74,23 @@ MAX = 0x8008
 FIRST_VERTEX_CONVENTION = 0x8E4D
 LAST_VERTEX_CONVENTION = 0x8E4E
 
+# Memory barrier
+
+VERTEX_ATTRIB_ARRAY_BARRIER_BIT = 0x00000001
+ELEMENT_ARRAY_BARRIER_BIT = 0x00000002
+UNIFORM_BARRIER_BIT = 0x00000004
+TEXTURE_FETCH_BARRIER_BIT = 0x00000008
+SHADER_IMAGE_ACCESS_BARRIER_BIT = 0x00000020
+COMMAND_BARRIER_BIT = 0x00000040
+PIXEL_BUFFER_BARRIER_BIT = 0x00000080
+TEXTURE_UPDATE_BARRIER_BIT = 0x00000100
+BUFFER_UPDATE_BARRIER_BIT = 0x00000200
+FRAMEBUFFER_BARRIER_BIT = 0x00000400
+TRANSFORM_FEEDBACK_BARRIER_BIT = 0x00000800
+ATOMIC_COUNTER_BARRIER_BIT = 0x00001000
+SHADER_STORAGE_BARRIER_BIT = 0x00002000
+ALL_BARRIER_BITS = 0xFFFFFFFF
+
 
 class Buffer:
     def __init__(self):
@@ -264,6 +281,9 @@ class ComputeShader:
 
     def run(self, group_x: int = 1, group_y: int = 1, group_z: int = 1) -> None:
         return self.mglo.run(group_x, group_y, group_z)
+
+    def run_indirect(self, buffer: 'Buffer', offset: int = 0) -> None:
+        return self.mglo.run(buffer, offset)
 
     def get(self, key: str, default: Any) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]:
         return self._members.get(key, default)
@@ -902,6 +922,9 @@ class Texture:
     def bind_to_image(self, unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0) -> None:
         self.mglo.bind(unit, read, write, level, format)
 
+    def get_handle(self, resident: bool = True):
+        return self.mglo.get_handle(resident)
+
     def release(self) -> None:
         if not isinstance(self.mglo, InvalidObject):
             self.mglo.release()
@@ -1045,6 +1068,9 @@ class Texture3D:
     def bind_to_image(self, unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0) -> None:
         self.mglo.bind(unit, read, write, level, format)
 
+    def get_handle(self, resident: bool = True):
+        return self.mglo.get_handle(resident)
+
     def release(self) -> None:
         if not isinstance(self.mglo, InvalidObject):
             self.mglo.release()
@@ -1152,11 +1178,17 @@ class TextureCube:
 
         self.mglo.write(face, data, viewport, alignment)
 
+    def build_mipmaps(self, base: int = 0, max_level: int = 1000) -> None:
+        self.mglo.build_mipmaps(base, max_level)
+
     def use(self, location: int = 0) -> None:
         self.mglo.use(location)
 
     def bind_to_image(self, unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0) -> None:
         self.mglo.bind(unit, read, write, level, format)
+
+    def get_handle(self, resident: bool = True):
+        return self.mglo.get_handle(resident)
 
     def release(self) -> None:
         if not isinstance(self.mglo, InvalidObject):
@@ -1301,6 +1333,9 @@ class TextureArray:
 
     def bind_to_image(self, unit: int, read: bool = True, write: bool = True, level: int = 0, format: int = 0) -> None:
         self.mglo.bind(unit, read, write, level, format)
+
+    def get_handle(self, resident: bool = True):
+        return self.mglo.get_handle(resident)
 
     def release(self) -> None:
         if not isinstance(self.mglo, InvalidObject):
@@ -1537,6 +1572,23 @@ class Context:
 
     FIRST_VERTEX_CONVENTION = 0x8E4D
     LAST_VERTEX_CONVENTION = 0x8E4E
+
+    # Memory barrier
+
+    VERTEX_ATTRIB_ARRAY_BARRIER_BIT = 0x00000001
+    ELEMENT_ARRAY_BARRIER_BIT = 0x00000002
+    UNIFORM_BARRIER_BIT = 0x00000004
+    TEXTURE_FETCH_BARRIER_BIT = 0x00000008
+    SHADER_IMAGE_ACCESS_BARRIER_BIT = 0x00000020
+    COMMAND_BARRIER_BIT = 0x00000040
+    PIXEL_BUFFER_BARRIER_BIT = 0x00000080
+    TEXTURE_UPDATE_BARRIER_BIT = 0x00000100
+    BUFFER_UPDATE_BARRIER_BIT = 0x00000200
+    FRAMEBUFFER_BARRIER_BIT = 0x00000400
+    TRANSFORM_FEEDBACK_BARRIER_BIT = 0x00000800
+    ATOMIC_COUNTER_BARRIER_BIT = 0x00001000
+    SHADER_STORAGE_BARRIER_BIT = 0x00002000
+    ALL_BARRIER_BITS = 0xFFFFFFFF
 
     def __init__(self):
         self.mglo = None
@@ -2135,6 +2187,21 @@ class Context:
         res.extra = None
         return res
 
+    def empty_framebuffer(
+        self,
+        size: Tuple[int, int],
+        layers: Optional[int] = 0,
+        samples: Optional[int] = 0,
+    ) -> 'Framebuffer':
+        res = Framebuffer.__new__(Framebuffer)
+        res.mglo, res._size, res._samples, res._glo = self.mglo.empty_framebuffer(size, layers, samples)
+        res._color_attachments = ()
+        res._depth_attachment = None
+        res.ctx = self
+        res._is_reference = False
+        res.extra = None
+        return res
+
     def renderbuffer(
         self,
         size: Tuple[int, int],
@@ -2208,6 +2275,9 @@ class Context:
         res.extra = None
         res.texture = texture
         return res
+
+    def memory_barrier(self, barriers: int = ALL_BARRIER_BITS, by_region: bool = False) -> None:
+        self.mglo.memory_barrier(barriers, by_region)
 
     def clear_samplers(self, start: int = 0, end: int = -1) -> None:
         self.mglo.clear_samplers(start, end)

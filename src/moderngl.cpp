@@ -178,6 +178,7 @@ struct MGLQuery {
     MGLContext * context;
     int query_obj[4];
     MGLQueryState state;
+    bool ended;
     bool released;
 };
 
@@ -1408,7 +1409,7 @@ PyObject * MGLBuffer_bind_to_storage_buffer(MGLBuffer * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLBuffer_release(MGLBuffer * self) {
+PyObject * MGLBuffer_release(MGLBuffer * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -1422,8 +1423,8 @@ PyObject * MGLBuffer_release(MGLBuffer * self) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLBuffer_size(MGLBuffer * self) {
-    return PyLong_FromLong(self->size);
+PyObject * MGLBuffer_size(MGLBuffer * self, PyObject * args) {
+    return PyLong_FromSsize_t(self->size);
 }
 
 int MGLBuffer_tp_as_buffer_get_view(MGLBuffer * self, Py_buffer * view, int flags) {
@@ -1654,6 +1655,23 @@ PyObject * MGLComputeShader_run(MGLComputeShader * self, PyObject * args) {
 
     gl.UseProgram(self->program_obj);
     gl.DispatchCompute(x, y, z);
+
+    Py_RETURN_NONE;
+}
+
+PyObject * MGLComputeShader_run_indirect(MGLComputeShader * self, PyObject * args) {
+    MGLBuffer * buffer;
+    Py_ssize_t offset = 0;
+
+    if (!PyArg_ParseTuple(args, "O!|n", MGLBuffer_type, &buffer, &offset)) {
+        return 0;
+    }
+
+    const GLMethods & gl = self->context->gl;
+
+    gl.UseProgram(self->program_obj);
+    gl.BindBuffer(GL_DISPATCH_INDIRECT_BUFFER, buffer->buffer_obj);
+    gl.DispatchComputeIndirect((GLintptr)offset);
 
     Py_RETURN_NONE;
 }
@@ -1997,7 +2015,130 @@ PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
     return result;
 }
 
-PyObject * MGLFramebuffer_release(MGLFramebuffer * self) {
+PyObject * MGLContext_empty_framebuffer(MGLContext * self, PyObject * args) {
+    int width;
+    int height;
+    int layers = 0;
+    int samples = 0;
+
+    if (!PyArg_ParseTuple(args, "(II)|II", &width, &height, &layers, &samples)) {
+        return 0;
+    }
+
+    const GLMethods & gl = self->gl;
+
+    MGLFramebuffer * framebuffer = PyObject_New(MGLFramebuffer, MGLFramebuffer_type);
+    framebuffer->released = false;
+
+    framebuffer->framebuffer_obj = 0;
+    gl.GenFramebuffers(1, (GLuint *)&framebuffer->framebuffer_obj);
+
+    if (!framebuffer->framebuffer_obj) {
+        MGLError_Set("cannot create framebuffer");
+        Py_DECREF(framebuffer);
+        return 0;
+    }
+
+    gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer->framebuffer_obj);
+    gl.DrawBuffer(GL_NONE);
+    gl.ReadBuffer(GL_NONE);
+
+    gl.FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
+    gl.FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
+
+    if (layers) {
+        gl.FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_LAYERS, layers);
+    }
+
+    if (samples) {
+        gl.FramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_SAMPLES, samples);
+    }
+
+    int status = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
+
+    gl.BindFramebuffer(GL_FRAMEBUFFER, self->bound_framebuffer->framebuffer_obj);
+
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        const char * message = "the framebuffer is not complete";
+
+        switch (status) {
+            case GL_FRAMEBUFFER_UNDEFINED:
+                message = "the framebuffer is not complete (UNDEFINED)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                message = "the framebuffer is not complete (INCOMPLETE_ATTACHMENT)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                message = "the framebuffer is not complete (INCOMPLETE_MISSING_ATTACHMENT)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                message = "the framebuffer is not complete (INCOMPLETE_DRAW_BUFFER)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+                message = "the framebuffer is not complete (INCOMPLETE_READ_BUFFER)";
+                break;
+
+            case GL_FRAMEBUFFER_UNSUPPORTED:
+                message = "the framebuffer is not complete (UNSUPPORTED)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                message = "the framebuffer is not complete (INCOMPLETE_MULTISAMPLE)";
+                break;
+
+            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                message = "the framebuffer is not complete (INCOMPLETE_LAYER_TARGETS)";
+                break;
+        }
+
+        MGLError_Set(message);
+        return 0;
+    }
+
+    framebuffer->draw_buffers_len = 0;
+    framebuffer->draw_buffers = new unsigned[1];
+    framebuffer->color_mask = new bool[5];
+    framebuffer->depth_mask = false;
+
+    framebuffer->viewport_x = 0;
+    framebuffer->viewport_y = 0;
+    framebuffer->viewport_width = width;
+    framebuffer->viewport_height = height;
+    framebuffer->dynamic = false;
+
+    framebuffer->scissor_enabled = false;
+    framebuffer->scissor_x = 0;
+    framebuffer->scissor_y = 0;
+    framebuffer->scissor_width = width;
+    framebuffer->scissor_height = height;
+
+    framebuffer->width = width;
+    framebuffer->height = height;
+    framebuffer->samples = samples;
+
+    Py_INCREF(self);
+    framebuffer->context = self;
+
+    Py_INCREF(framebuffer);
+
+    PyObject * size = PyTuple_New(2);
+    PyTuple_SET_ITEM(size, 0, PyLong_FromLong(framebuffer->width));
+    PyTuple_SET_ITEM(size, 1, PyLong_FromLong(framebuffer->height));
+
+    Py_INCREF(framebuffer);
+    PyObject * result = PyTuple_New(4);
+    PyTuple_SET_ITEM(result, 0, (PyObject *)framebuffer);
+    PyTuple_SET_ITEM(result, 1, size);
+    PyTuple_SET_ITEM(result, 2, PyLong_FromLong(framebuffer->samples));
+    PyTuple_SET_ITEM(result, 3, PyLong_FromLong(framebuffer->framebuffer_obj));
+    return result;
+}
+
+PyObject * MGLFramebuffer_release(MGLFramebuffer * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -2079,7 +2220,7 @@ PyObject * MGLFramebuffer_clear(MGLFramebuffer * self, PyObject * args) {
     }
 
     gl.ClearColor(r, g, b, a);
-    gl.ClearDepth(depth);
+    gl.ClearDepthf(depth);
 
     for (int i = 0; i < self->draw_buffers_len; ++i) {
         gl.ColorMaski(
@@ -2125,7 +2266,7 @@ PyObject * MGLFramebuffer_clear(MGLFramebuffer * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLFramebuffer_use(MGLFramebuffer * self) {
+PyObject * MGLFramebuffer_use(MGLFramebuffer * self, PyObject * args) {
     const GLMethods & gl = self->context->gl;
 
     gl.BindFramebuffer(GL_FRAMEBUFFER, self->framebuffer_obj);
@@ -3323,7 +3464,7 @@ PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
     return result;
 }
 
-PyObject * MGLProgram_release(MGLProgram * self) {
+PyObject * MGLProgram_release(MGLProgram * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -3364,12 +3505,17 @@ PyObject * MGLContext_query(MGLContext * self, PyObject * args) {
     }
 
     MGLQuery * query = PyObject_New(MGLQuery, MGLQuery_type);
+    query->query_obj[SAMPLES_PASSED] = 0;
+    query->query_obj[ANY_SAMPLES_PASSED] = 0;
+    query->query_obj[TIME_ELAPSED] = 0;
+    query->query_obj[PRIMITIVES_GENERATED] = 0;
     query->released = false;
 
     Py_INCREF(self);
     query->context = self;
 
     query->state = QUERY_INACTIVE;
+    query->ended = false;
 
     const GLMethods & gl = self->gl;
 
@@ -3389,9 +3535,10 @@ PyObject * MGLContext_query(MGLContext * self, PyObject * args) {
     return (PyObject *)query;
 }
 
-PyObject * MGLQuery_begin(MGLQuery * self) {
+PyObject * MGLQuery_begin(MGLQuery * self, PyObject * args) {
     if (self->state != QUERY_INACTIVE) {
         MGLError_Set(self->state == QUERY_ACTIVE ? "this query is already running" : "this query is in conditional render mode");
+        return NULL;
     }
 
     const GLMethods & gl = self->context->gl;
@@ -3416,9 +3563,10 @@ PyObject * MGLQuery_begin(MGLQuery * self) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLQuery_end(MGLQuery * self) {
+PyObject * MGLQuery_end(MGLQuery * self, PyObject * args) {
     if (self->state != QUERY_ACTIVE) {
         MGLError_Set(self->state == QUERY_INACTIVE ? "this query was not started" : "this query is in conditional render mode");
+        return NULL;
     }
 
     const GLMethods & gl = self->context->gl;
@@ -3440,12 +3588,14 @@ PyObject * MGLQuery_end(MGLQuery * self) {
     }
 
     self->state = QUERY_INACTIVE;
+    self->ended = true;
     Py_RETURN_NONE;
 }
 
 PyObject * MGLQuery_begin_render(MGLQuery * self, PyObject * args) {
     if (self->state != QUERY_INACTIVE) {
         MGLError_Set(self->state == QUERY_ACTIVE ? "this query was not stopped" : "this query is already in conditional render mode");
+        return NULL;
     }
 
     const GLMethods & gl = self->context->gl;
@@ -3456,7 +3606,7 @@ PyObject * MGLQuery_begin_render(MGLQuery * self, PyObject * args) {
         gl.BeginConditionalRender(self->query_obj[SAMPLES_PASSED], GL_QUERY_NO_WAIT);
     } else {
         MGLError_Set("no samples");
-        return 0;
+        return NULL;
     }
 
     self->state = QUERY_CONDITIONAL_RENDER;
@@ -3466,6 +3616,7 @@ PyObject * MGLQuery_begin_render(MGLQuery * self, PyObject * args) {
 PyObject * MGLQuery_end_render(MGLQuery * self, PyObject * args) {
     if (self->state != QUERY_CONDITIONAL_RENDER) {
         MGLError_Set("this query is not in conditional render mode");
+        return NULL;
     }
 
     const GLMethods & gl = self->context->gl;
@@ -3475,30 +3626,66 @@ PyObject * MGLQuery_end_render(MGLQuery * self, PyObject * args) {
 }
 
 PyObject * MGLQuery_get_samples(MGLQuery * self) {
+    if (!self->query_obj[SAMPLES_PASSED]) {
+        MGLError_Set("query created without the samples_passed flag");
+        return NULL;
+    }
+
+    if (self->state == QUERY_ACTIVE) {
+        MGLError_Set("this query was not stopped");
+        return NULL;
+    }
+
     const GLMethods & gl = self->context->gl;
 
-    int samples = 0;
-    gl.GetQueryObjectiv(self->query_obj[SAMPLES_PASSED], GL_QUERY_RESULT, &samples);
+    unsigned samples = 0;
+    if (self->ended) {
+        gl.GetQueryObjectuiv(self->query_obj[SAMPLES_PASSED], GL_QUERY_RESULT, &samples);
+    }
 
-    return PyLong_FromLong(samples);
+    return PyLong_FromUnsignedLong(samples);
 }
 
 PyObject * MGLQuery_get_primitives(MGLQuery * self) {
+    if (!self->query_obj[PRIMITIVES_GENERATED]) {
+        MGLError_Set("query created without the primitives_generated flag");
+        return NULL;
+    }
+
+    if (self->state == QUERY_ACTIVE) {
+        MGLError_Set("this query was not stopped");
+        return NULL;
+    }
+
     const GLMethods & gl = self->context->gl;
 
-    int primitives = 0;
-    gl.GetQueryObjectiv(self->query_obj[PRIMITIVES_GENERATED], GL_QUERY_RESULT, &primitives);
+    unsigned primitives = 0;
+    if (self->ended) {
+        gl.GetQueryObjectuiv(self->query_obj[PRIMITIVES_GENERATED], GL_QUERY_RESULT, &primitives);
+    }
 
-    return PyLong_FromLong(primitives);
+    return PyLong_FromUnsignedLong(primitives);
 }
 
 PyObject * MGLQuery_get_elapsed(MGLQuery * self) {
+    if (!self->query_obj[TIME_ELAPSED]) {
+        MGLError_Set("query created without the time_elapsed flag");
+        return NULL;
+    }
+
+    if (self->state == QUERY_ACTIVE) {
+        MGLError_Set("this query was not stopped");
+        return NULL;
+    }
+
     const GLMethods & gl = self->context->gl;
 
-    int elapsed = 0;
-    gl.GetQueryObjectiv(self->query_obj[TIME_ELAPSED], GL_QUERY_RESULT, &elapsed);
+    unsigned elapsed = 0;
+    if (self->ended) {
+        gl.GetQueryObjectuiv(self->query_obj[TIME_ELAPSED], GL_QUERY_RESULT, &elapsed);
+    }
 
-    return PyLong_FromLong(elapsed);
+    return PyLong_FromUnsignedLong(elapsed);
 }
 
 PyObject * MGLContext_renderbuffer(MGLContext * self, PyObject * args) {
@@ -3649,7 +3836,7 @@ PyObject * MGLContext_depth_renderbuffer(MGLContext * self, PyObject * args) {
     return result;
 }
 
-PyObject * MGLRenderbuffer_release(MGLRenderbuffer * self) {
+PyObject * MGLRenderbuffer_release(MGLRenderbuffer * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -3704,6 +3891,27 @@ PyObject * MGLContext_sampler(MGLContext * self, PyObject * args) {
     return result;
 }
 
+PyObject * MGLContext_memory_barrier(MGLContext * self, PyObject * args) {
+    unsigned barriers = GL_ALL_BARRIER_BITS;
+    int by_region = false;
+
+    if (!PyArg_ParseTuple(args, "|Ip", &barriers, &by_region)) {
+        return 0;
+    }
+
+    if (by_region && !self->gl.MemoryBarrierByRegion) {
+        by_region = false;
+    }
+
+    if (by_region) {
+        self->gl.MemoryBarrierByRegion(barriers);
+    } else if (self->gl.MemoryBarrier) {
+        self->gl.MemoryBarrier(barriers);
+    }
+
+    Py_RETURN_NONE;
+}
+
 PyObject * MGLSampler_use(MGLSampler * self, PyObject * args) {
     int index;
 
@@ -3742,7 +3950,7 @@ PyObject * MGLSampler_clear(MGLSampler * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLSampler_release(MGLSampler * self) {
+PyObject * MGLSampler_release(MGLSampler * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -4080,7 +4288,7 @@ PyObject * MGLScope_begin(MGLScope * self, PyObject * args) {
     self->old_enable_flags = self->context->enable_flags;
     self->context->enable_flags = self->enable_flags;
 
-    MGLFramebuffer_use(self->framebuffer);
+    Py_XDECREF(MGLFramebuffer_use(self->framebuffer, NULL));
 
     for (int i = 0; i < self->num_textures; ++i) {
         gl.ActiveTexture(self->textures[i * 3]);
@@ -4152,7 +4360,7 @@ PyObject * MGLScope_end(MGLScope * self, PyObject * args) {
 
     self->context->enable_flags = self->old_enable_flags;
 
-    MGLFramebuffer_use(self->old_framebuffer);
+    Py_XDECREF(MGLFramebuffer_use(self->old_framebuffer, NULL));
 
     if (flags & MGL_BLEND) {
         gl.Enable(GL_BLEND);
@@ -4187,7 +4395,7 @@ PyObject * MGLScope_end(MGLScope * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLScope_release(MGLScope * self) {
+PyObject * MGLScope_release(MGLScope * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -4946,7 +5154,26 @@ PyObject * MGLTexture_build_mipmaps(MGLTexture * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLTexture_release(MGLTexture * self) {
+PyObject * MGLTexture_get_handle(MGLTexture * self, PyObject * args) {
+    int resident = true;
+
+    if(!PyArg_ParseTuple(args, "|p", &resident)) {
+        return NULL;
+    }
+
+    const GLMethods & gl = self->context->gl;
+
+    unsigned long long handle = gl.GetTextureHandleARB(self->texture_obj);
+    if (resident) {
+        gl.MakeTextureHandleResidentARB(handle);
+    } else {
+        gl.MakeTextureHandleNonResidentARB(handle);
+    }
+
+    return PyLong_FromUnsignedLongLong(handle);
+}
+
+PyObject * MGLTexture_release(MGLTexture * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -5625,18 +5852,20 @@ PyObject * MGLTexture3D_build_mipmaps(MGLTexture3D * self, PyObject * args) {
         return 0;
     }
 
+    int texture_target = GL_TEXTURE_3D;
+
     const GLMethods & gl = self->context->gl;
 
     gl.ActiveTexture(GL_TEXTURE0 + self->context->default_texture_unit);
-    gl.BindTexture(GL_TEXTURE_3D, self->texture_obj);
+    gl.BindTexture(texture_target, self->texture_obj);
 
-    gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, base);
-    gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, max);
+    gl.TexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, base);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, max);
 
-    gl.GenerateMipmap(GL_TEXTURE_3D);
+    gl.GenerateMipmap(texture_target);
 
-    gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    gl.TexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     self->min_filter = GL_LINEAR_MIPMAP_LINEAR;
     self->mag_filter = GL_LINEAR;
@@ -5644,8 +5873,26 @@ PyObject * MGLTexture3D_build_mipmaps(MGLTexture3D * self, PyObject * args) {
 
     Py_RETURN_NONE;
 }
+PyObject * MGLTexture3D_get_handle(MGLTexture3D * self, PyObject * args) {
+    int resident = true;
 
-PyObject * MGLTexture3D_release(MGLTexture3D * self) {
+    if(!PyArg_ParseTuple(args, "|p", &resident)) {
+        return NULL;
+    }
+
+    const GLMethods & gl = self->context->gl;
+
+    unsigned long long handle = gl.GetTextureHandleARB(self->texture_obj);
+    if (resident) {
+        gl.MakeTextureHandleResidentARB(handle);
+    } else {
+        gl.MakeTextureHandleNonResidentARB(handle);
+    }
+
+    return PyLong_FromUnsignedLongLong(handle);
+}
+
+PyObject * MGLTexture3D_release(MGLTexture3D * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -6299,18 +6546,20 @@ PyObject * MGLTextureArray_build_mipmaps(MGLTextureArray * self, PyObject * args
         return 0;
     }
 
+    int texture_target = GL_TEXTURE_2D_ARRAY;
+
     const GLMethods & gl = self->context->gl;
 
     gl.ActiveTexture(GL_TEXTURE0 + self->context->default_texture_unit);
-    gl.BindTexture(GL_TEXTURE_2D_ARRAY, self->texture_obj);
+    gl.BindTexture(texture_target, self->texture_obj);
 
-    gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, base);
-    gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, max);
+    gl.TexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, base);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, max);
 
-    gl.GenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    gl.GenerateMipmap(texture_target);
 
-    gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     self->min_filter = GL_LINEAR_MIPMAP_LINEAR;
     self->mag_filter = GL_LINEAR;
@@ -6318,8 +6567,26 @@ PyObject * MGLTextureArray_build_mipmaps(MGLTextureArray * self, PyObject * args
 
     Py_RETURN_NONE;
 }
+PyObject * MGLTextureArray_get_handle(MGLTextureArray * self, PyObject * args) {
+    int resident = true;
 
-PyObject * MGLTextureArray_release(MGLTextureArray * self) {
+    if(!PyArg_ParseTuple(args, "|p", &resident)) {
+        return NULL;
+    }
+
+    const GLMethods & gl = self->context->gl;
+
+    unsigned long long handle = gl.GetTextureHandleARB(self->texture_obj);
+    if (resident) {
+        gl.MakeTextureHandleResidentARB(handle);
+    } else {
+        gl.MakeTextureHandleNonResidentARB(handle);
+    }
+
+    return PyLong_FromUnsignedLongLong(handle);
+}
+
+PyObject * MGLTextureArray_release(MGLTextureArray * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -6957,8 +7224,68 @@ PyObject * MGLTextureCube_use(MGLTextureCube * self, PyObject * args) {
 
     Py_RETURN_NONE;
 }
+PyObject * MGLTextureCube_get_handle(MGLTextureCube * self, PyObject * args) {
+    int resident = true;
 
-PyObject * MGLTextureCube_release(MGLTextureCube * self) {
+    if(!PyArg_ParseTuple(args, "|p", &resident)) {
+        return NULL;
+    }
+
+    const GLMethods & gl = self->context->gl;
+
+    unsigned long long handle = gl.GetTextureHandleARB(self->texture_obj);
+    if (resident) {
+        gl.MakeTextureHandleResidentARB(handle);
+    } else {
+        gl.MakeTextureHandleNonResidentARB(handle);
+    }
+
+    return PyLong_FromUnsignedLongLong(handle);
+}
+
+PyObject * MGLTextureCube_build_mipmaps(MGLTextureCube * self, PyObject * args) {
+    int base = 0;
+    int max = 1000;
+
+    int args_ok = PyArg_ParseTuple(
+        args,
+        "II",
+        &base,
+        &max
+    );
+
+    if (!args_ok) {
+        return 0;
+    }
+
+    if (base > self->max_level) {
+        MGLError_Set("invalid base");
+        return 0;
+    }
+
+    int texture_target = GL_TEXTURE_CUBE_MAP;
+
+    const GLMethods & gl = self->context->gl;
+
+    gl.ActiveTexture(GL_TEXTURE0 + self->context->default_texture_unit);
+    gl.BindTexture(texture_target, self->texture_obj);
+
+    gl.TexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, base);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, max);
+
+    gl.GenerateMipmap(texture_target);
+
+    gl.TexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gl.TexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    self->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+    self->mag_filter = GL_LINEAR;
+    self->max_level = max;
+
+    Py_RETURN_NONE;
+}
+
+PyObject * MGLTextureCube_release(MGLTextureCube * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -7624,7 +7951,7 @@ PyObject * MGLVertexArray_bind(MGLVertexArray * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLVertexArray_release(MGLVertexArray * self) {
+PyObject * MGLVertexArray_release(MGLVertexArray * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -7924,7 +8251,7 @@ PyObject * MGLContext_disable_direct(MGLContext * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLContext_finish(MGLContext * self) {
+PyObject * MGLContext_finish(MGLContext * self, PyObject * args) {
     self->gl.Finish();
     Py_RETURN_NONE;
 }
@@ -8260,15 +8587,15 @@ PyObject * MGLContext_clear_samplers(MGLContext * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
-PyObject * MGLContext_enter(MGLContext * self) {
+PyObject * MGLContext_enter(MGLContext * self, PyObject * args) {
     return PyObject_CallMethod(self->ctx, "__enter__", NULL);
 }
 
-PyObject * MGLContext_exit(MGLContext * self) {
+PyObject * MGLContext_exit(MGLContext * self, PyObject * args) {
     return PyObject_CallMethod(self->ctx, "__exit__", NULL);
 }
 
-PyObject * MGLContext_release(MGLContext * self) {
+PyObject * MGLContext_release(MGLContext * self, PyObject * args) {
     if (self->released) {
         Py_RETURN_NONE;
     }
@@ -8499,6 +8826,19 @@ PyObject * MGLContext_write_uniform(MGLContext * self, PyObject * args) {
     }
 
     PyBuffer_Release(&view);
+    Py_RETURN_NONE;
+}
+
+PyObject * MGLContext_set_uniform_handle(MGLContext * self, PyObject * args) {
+    int program_obj;
+    int location;
+    unsigned long long handle;
+
+    if (!PyArg_ParseTuple(args, "IIK", &program_obj, &location, &handle)) {
+        return NULL;
+    }
+
+    self->gl.ProgramUniformHandleui64ARB(program_obj, location, handle);
     Py_RETURN_NONE;
 }
 
@@ -9186,6 +9526,8 @@ PyObject * create_context(PyObject * self, PyObject * args, PyObject * kwargs) {
         if (!context) {
             return NULL;
         }
+    } else {
+        Py_INCREF(context);
     }
 
     MGLContext * ctx = PyObject_New(MGLContext, MGLContext_type);
@@ -9232,8 +9574,12 @@ PyObject * create_context(PyObject * self, PyObject * args, PyObject * kwargs) {
 
     gl.Enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    gl.Enable(GL_PRIMITIVE_RESTART);
-    gl.PrimitiveRestartIndex(-1);
+    if (gl.PrimitiveRestartIndex) {
+        gl.Enable(GL_PRIMITIVE_RESTART);
+        gl.PrimitiveRestartIndex(-1);
+    } else {
+        gl.Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+    }
 
     ctx->max_samples = 0;
     gl.GetIntegerv(GL_MAX_SAMPLES, (GLint *)&ctx->max_samples);
@@ -9413,12 +9759,14 @@ PyMethodDef MGLContext_methods[] = {
     {(char *)"vertex_array", (PyCFunction)MGLContext_vertex_array, METH_VARARGS},
     {(char *)"program", (PyCFunction)MGLContext_program, METH_VARARGS},
     {(char *)"framebuffer", (PyCFunction)MGLContext_framebuffer, METH_VARARGS},
+    {(char *)"empty_framebuffer", (PyCFunction)MGLContext_empty_framebuffer, METH_VARARGS},
     {(char *)"renderbuffer", (PyCFunction)MGLContext_renderbuffer, METH_VARARGS},
     {(char *)"depth_renderbuffer", (PyCFunction)MGLContext_depth_renderbuffer, METH_VARARGS},
     {(char *)"compute_shader", (PyCFunction)MGLContext_compute_shader, METH_VARARGS},
     {(char *)"query", (PyCFunction)MGLContext_query, METH_VARARGS},
     {(char *)"scope", (PyCFunction)MGLContext_scope, METH_VARARGS},
     {(char *)"sampler", (PyCFunction)MGLContext_sampler, METH_VARARGS},
+    {(char *)"memory_barrier", (PyCFunction)MGLContext_memory_barrier, METH_VARARGS},
 
     {(char *)"__enter__", (PyCFunction)MGLContext_enter, METH_NOARGS},
     {(char *)"__exit__", (PyCFunction)MGLContext_exit, METH_VARARGS},
@@ -9430,6 +9778,7 @@ PyMethodDef MGLContext_methods[] = {
     {(char *)"_set_storage_block_binding", (PyCFunction)MGLContext_set_storage_block_binding, METH_VARARGS},
     {(char *)"_write_uniform", (PyCFunction)MGLContext_write_uniform, METH_VARARGS},
     {(char *)"_read_uniform", (PyCFunction)MGLContext_read_uniform, METH_VARARGS},
+    {(char *)"_set_uniform_handle", (PyCFunction)MGLContext_set_uniform_handle, METH_VARARGS},
     {},
 };
 
@@ -9556,6 +9905,7 @@ PyMethodDef MGLTexture_methods[] = {
     {(char *)"build_mipmaps", (PyCFunction)MGLTexture_build_mipmaps, METH_VARARGS},
     {(char *)"read", (PyCFunction)MGLTexture_read, METH_VARARGS},
     {(char *)"read_into", (PyCFunction)MGLTexture_read_into, METH_VARARGS},
+    {(char *)"get_handle", (PyCFunction)MGLTexture_get_handle, METH_VARARGS},
     {(char *)"release", (PyCFunction)MGLTexture_release, METH_NOARGS},
     {},
 };
@@ -9576,6 +9926,7 @@ PyMethodDef MGLTexture3D_methods[] = {
     {(char *)"build_mipmaps", (PyCFunction)MGLTexture3D_build_mipmaps, METH_VARARGS},
     {(char *)"read", (PyCFunction)MGLTexture3D_read, METH_VARARGS},
     {(char *)"read_into", (PyCFunction)MGLTexture3D_read_into, METH_VARARGS},
+    {(char *)"get_handle", (PyCFunction)MGLTexture3D_get_handle, METH_VARARGS},
     {(char *)"release", (PyCFunction)MGLTexture3D_release, METH_NOARGS},
     {},
 };
@@ -9596,6 +9947,7 @@ PyMethodDef MGLTextureArray_methods[] = {
     {(char *)"build_mipmaps", (PyCFunction)MGLTextureArray_build_mipmaps, METH_VARARGS},
     {(char *)"read", (PyCFunction)MGLTextureArray_read, METH_VARARGS},
     {(char *)"read_into", (PyCFunction)MGLTextureArray_read_into, METH_VARARGS},
+    {(char *)"get_handle", (PyCFunction)MGLTextureArray_get_handle, METH_VARARGS},
     {(char *)"release", (PyCFunction)MGLTextureArray_release, METH_NOARGS},
     {},
 };
@@ -9611,9 +9963,10 @@ PyMethodDef MGLTextureCube_methods[] = {
     {(char *)"write", (PyCFunction)MGLTextureCube_write, METH_VARARGS},
     {(char *)"use", (PyCFunction)MGLTextureCube_use, METH_VARARGS},
     {(char *)"bind", (PyCFunction)MGLTextureCube_meth_bind, METH_VARARGS},
-//	{(char *)"build_mipmaps", (PyCFunction)MGLTextureCube_build_mipmaps, METH_VARARGS},
+	{(char *)"build_mipmaps", (PyCFunction)MGLTextureCube_build_mipmaps, METH_VARARGS},
     {(char *)"read", (PyCFunction)MGLTextureCube_read, METH_VARARGS},
     {(char *)"read_into", (PyCFunction)MGLTextureCube_read_into, METH_VARARGS},
+    {(char *)"get_handle", (PyCFunction)MGLTextureCube_get_handle, METH_VARARGS},
     {(char *)"release", (PyCFunction)MGLTextureCube_release, METH_NOARGS},
     {},
 };

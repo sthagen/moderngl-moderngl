@@ -228,6 +228,76 @@ Specifies the last vertex should be used as the source of data for flat shaded v
 Used with :py:attr:`Context.provoking_vertex`.
 '''
 
+VERTEX_ATTRIB_ARRAY_BARRIER_BIT: Constant
+'''
+VERTEX_ATTRIB_ARRAY_BARRIER_BIT
+'''
+
+ELEMENT_ARRAY_BARRIER_BIT: Constant
+'''
+ELEMENT_ARRAY_BARRIER_BIT
+'''
+
+UNIFORM_BARRIER_BIT: Constant
+'''
+UNIFORM_BARRIER_BIT
+'''
+
+TEXTURE_FETCH_BARRIER_BIT: Constant
+'''
+TEXTURE_FETCH_BARRIER_BIT
+'''
+
+SHADER_IMAGE_ACCESS_BARRIER_BIT: Constant
+'''
+SHADER_IMAGE_ACCESS_BARRIER_BIT
+'''
+
+COMMAND_BARRIER_BIT: Constant
+'''
+COMMAND_BARRIER_BIT
+'''
+
+PIXEL_BUFFER_BARRIER_BIT: Constant
+'''
+PIXEL_BUFFER_BARRIER_BIT
+'''
+
+TEXTURE_UPDATE_BARRIER_BIT: Constant
+'''
+TEXTURE_UPDATE_BARRIER_BIT
+'''
+
+BUFFER_UPDATE_BARRIER_BIT: Constant
+'''
+BUFFER_UPDATE_BARRIER_BIT
+'''
+
+FRAMEBUFFER_BARRIER_BIT: Constant
+'''
+FRAMEBUFFER_BARRIER_BIT
+'''
+
+TRANSFORM_FEEDBACK_BARRIER_BIT: Constant
+'''
+TRANSFORM_FEEDBACK_BARRIER_BIT
+'''
+
+ATOMIC_COUNTER_BARRIER_BIT: Constant
+'''
+ATOMIC_COUNTER_BARRIER_BIT
+'''
+
+SHADER_STORAGE_BARRIER_BIT: Constant
+'''
+SHADER_STORAGE_BARRIER_BIT
+'''
+
+ALL_BARRIER_BITS: Constant
+'''
+ALL_BARRIER_BITS
+'''
+
 
 class Attribute:
     '''
@@ -510,6 +580,13 @@ class Uniform:
 
     The value must be a tuple for non array uniforms.
     The value must be a list of tuples for array uniforms.
+    '''
+
+    handle: int
+    '''
+    The handle of the uniform.
+
+    Only valid for uniform textures when using Bindless Textures.
     '''
 
     extra: Any
@@ -997,6 +1074,11 @@ class ComputeShader:
             group_z (int): The number of work groups to be launched in the Z dimension.
         '''
 
+    def run_indirect(self, buffer: Buffer, offset: int = 0) -> None:
+        '''
+        Run the compute shader.
+        '''
+
     def get(self, key: str, default: Any) -> Union[Uniform, UniformBlock, Subroutine, Attribute, Varying]:
         '''
         Returns a Uniform, UniformBlock, Subroutine, Attribute or Varying.
@@ -1219,6 +1301,76 @@ class Context:
     LAST_VERTEX_CONVENTION: Constant
     '''Specifies the last vertex should be used as the source of data for flat shaded varyings.
     Used with :py:attr:`Context.provoking_vertex`.'''
+
+    VERTEX_ATTRIB_ARRAY_BARRIER_BIT: Constant
+    '''
+    VERTEX_ATTRIB_ARRAY_BARRIER_BIT
+    '''
+
+    ELEMENT_ARRAY_BARRIER_BIT: Constant
+    '''
+    ELEMENT_ARRAY_BARRIER_BIT
+    '''
+
+    UNIFORM_BARRIER_BIT: Constant
+    '''
+    UNIFORM_BARRIER_BIT
+    '''
+
+    TEXTURE_FETCH_BARRIER_BIT: Constant
+    '''
+    TEXTURE_FETCH_BARRIER_BIT
+    '''
+
+    SHADER_IMAGE_ACCESS_BARRIER_BIT: Constant
+    '''
+    SHADER_IMAGE_ACCESS_BARRIER_BIT
+    '''
+
+    COMMAND_BARRIER_BIT: Constant
+    '''
+    COMMAND_BARRIER_BIT
+    '''
+
+    PIXEL_BUFFER_BARRIER_BIT: Constant
+    '''
+    PIXEL_BUFFER_BARRIER_BIT
+    '''
+
+    TEXTURE_UPDATE_BARRIER_BIT: Constant
+    '''
+    TEXTURE_UPDATE_BARRIER_BIT
+    '''
+
+    BUFFER_UPDATE_BARRIER_BIT: Constant
+    '''
+    BUFFER_UPDATE_BARRIER_BIT
+    '''
+
+    FRAMEBUFFER_BARRIER_BIT: Constant
+    '''
+    FRAMEBUFFER_BARRIER_BIT
+    '''
+
+    TRANSFORM_FEEDBACK_BARRIER_BIT: Constant
+    '''
+    TRANSFORM_FEEDBACK_BARRIER_BIT
+    '''
+
+    ATOMIC_COUNTER_BARRIER_BIT: Constant
+    '''
+    ATOMIC_COUNTER_BARRIER_BIT
+    '''
+
+    SHADER_STORAGE_BARRIER_BIT: Constant
+    '''
+    SHADER_STORAGE_BARRIER_BIT
+    '''
+
+    ALL_BARRIER_BITS: Constant
+    '''
+    ALL_BARRIER_BITS
+    '''
 
     version_code :int
     '''int: The OpenGL version code. Reports ``410`` for OpenGL 4.1'''
@@ -2300,6 +2452,16 @@ class Context:
 
         Returns:
             :py:class:`Framebuffer` object
+        '''
+
+    def empty_framebuffer(
+        self,
+        size: Tuple[int, int],
+        layers: Optional[int] = 0,
+        samples: Optional[int] = 0,
+    ) -> 'Framebuffer':
+        '''
+        Empty Framebuffer
         '''
 
     def renderbuffer(
@@ -3503,6 +3665,11 @@ class Texture3D:
             format (int): (optional) The OpenGL enum value representing the format (defaults to the texture's format)
         '''
 
+    def get_handle(self, resident: bool = True):
+        '''
+        Handle for Bindless Textures.
+        '''
+
     def release(self) -> None:
         '''Release the ModernGL object.'''
 
@@ -3792,6 +3959,11 @@ class TextureArray:
             format (int): (optional) The OpenGL enum value representing the format (defaults to the texture's format)
         '''
 
+    def get_handle(self, resident: bool = True):
+        '''
+        Handle for Bindless Textures.
+        '''
+
     def release(self) -> None:
         '''Release the ModernGL object.'''
 
@@ -3982,6 +4154,18 @@ class TextureCube:
             alignment (int): The byte alignment of the pixels.
         '''
 
+    def build_mipmaps(self, base: int = 0, max_level: int = 1000) -> None:
+        '''
+        Generate mipmaps.
+
+        This also changes the texture filter to ``LINEAR_MIPMAP_LINEAR, LINEAR``
+        (Will be removed in ``6.x``)
+
+        Keyword Args:
+            base (int): The base level
+            max_level (int): The maximum levels to generate
+        '''
+
     def use(self, location: int = 0) -> None:
         '''
         Bind the texture to a texture unit.
@@ -4045,6 +4229,11 @@ class TextureCube:
             write (bool): Allows the shader to write to the image (default: ``True``)
             level (int): Level of the texture to bind (default: ``0``).
             format (int): (optional) The OpenGL enum value representing the format (defaults to the texture's format)
+        '''
+
+    def get_handle(self, resident: bool = True):
+        '''
+        Handle for Bindless Textures.
         '''
 
     def release(self) -> None:
@@ -4311,6 +4500,7 @@ class Texture:
         Generate mipmaps.
 
         This also changes the texture filter to ``LINEAR_MIPMAP_LINEAR, LINEAR``
+        (Will be removed in ``6.x``)
 
         Keyword Args:
             base (int): The base level
@@ -4375,6 +4565,11 @@ class Texture:
             write (bool): Allows the shader to write to the image (default: ``True``)
             level (int): Level of the texture to bind (default: ``0``).
             format (int): (optional) The OpenGL enum value representing the format (defaults to the texture's format)
+        '''
+
+    def get_handle(self, resident: bool = True):
+        '''
+        Handle for Bindless Textures.
         '''
 
     def release(self) -> None:
