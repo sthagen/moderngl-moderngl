@@ -1,6 +1,5 @@
 #include <Python.h>
 
-#include "opengl.hpp"
 #include "gl_methods.hpp"
 
 #define MGLError_Set(...) PyErr_Format(moderngl_error, __VA_ARGS__)
@@ -2935,8 +2934,6 @@ PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
             continue;
         }
 
-        const char * source_str = PyUnicode_AsUTF8(shaders[i]);
-
         int shader_obj = gl.CreateShader(SHADER_TYPE[i]);
 
         if (!shader_obj) {
@@ -2944,8 +2941,27 @@ PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
             return 0;
         }
 
-        gl.ShaderSource(shader_obj, 1, &source_str, 0);
-        gl.CompileShader(shader_obj);
+        if (PyUnicode_Check(shaders[i])) {
+            PyObject * source = PyObject_Str(shaders[i]);
+            const char * source_str = PyUnicode_AsUTF8(shaders[i]);
+            gl.ShaderSource(shader_obj, 1, &source_str, NULL);
+            gl.CompileShader(shader_obj);
+            Py_DECREF(source);
+        } else if (PyBytes_CheckExact(shaders[i])) {
+            unsigned * spv = (unsigned *)PyBytes_AsString(shaders[i]);
+            if (spv[0] == 0x07230203) {
+                int spv_length = (int)PyBytes_Size(shaders[i]);
+                gl.ShaderBinary(1, (unsigned *)&shader_obj, GL_SHADER_BINARY_FORMAT_SPIR_V, spv, spv_length);
+                gl.SpecializeShader(shader_obj, "main", 0, NULL, NULL);
+            } else {
+                const char * source_str = PyBytes_AsString(shaders[i]);
+                gl.ShaderSource(shader_obj, 1, &source_str, NULL);
+                gl.CompileShader(shader_obj);
+            }
+        } else {
+            MGLError_Set("wrong shader source type");
+            return NULL;
+        }
 
         int compiled = GL_FALSE;
         gl.GetShaderiv(shader_obj, GL_COMPILE_STATUS, &compiled);
@@ -6201,6 +6217,7 @@ PyObject * MGLContext_texture_array(MGLContext * self, PyObject * args) {
     texture->repeat_x = true;
     texture->repeat_y = true;
     texture->anisotropy = 0.0;
+    texture->max_level = 0;
 
     Py_INCREF(self);
     texture->context = self;
@@ -9124,12 +9141,12 @@ int MGLContext_set_front_face(MGLContext * self, PyObject * value) {
 }
 
 PyObject * MGLContext_get_cull_face(MGLContext * self) {
-    if (self->front_face == GL_FRONT) {
+    if (self->cull_face == GL_FRONT) {
         static PyObject * res_cw = PyUnicode_FromString("front");
         Py_INCREF(res_cw);
         return res_cw;
     }
-    else if (self->front_face == GL_BACK) {
+    else if (self->cull_face == GL_BACK) {
         static PyObject * res_cw = PyUnicode_FromString("back");
         Py_INCREF(res_cw);
         return res_cw;
@@ -9249,7 +9266,7 @@ void set_info_int(MGLContext * self, PyObject * info, const char * name, GLenum 
 void set_info_int64(MGLContext * self, PyObject * info, const char * name, GLenum param) {
     long long value = 0;
     if (self->gl.GetInteger64v) {
-        self->gl.GetInteger64v(param, &value);
+        self->gl.GetInteger64v(param, (GLint64 *)&value);
     }
     set_key(info, name, PyLong_FromLongLong(value));
 }
@@ -9535,18 +9552,9 @@ PyObject * create_context(PyObject * self, PyObject * args, PyObject * kwargs) {
     ctx->wireframe = false;
     ctx->ctx = context;
 
-    bool modern_loader = PyObject_HasAttrString(ctx->ctx, "load_opengl_function");
-    const char * loader_method = modern_loader ? "load_opengl_function" : "load";
-
-    // Map OpenGL functions
-    void ** gl_function = (void **)&ctx->gl;
-    for (int i = 0; GL_FUNCTIONS[i]; ++i) {
-        PyObject * val = PyObject_CallMethod(ctx->ctx, loader_method, "s", GL_FUNCTIONS[i]);
-        if (!val) {
-            return NULL;
-        }
-        gl_function[i] = PyLong_AsVoidPtr(val);
-        Py_DECREF(val);
+    ctx->gl = load_gl_methods(context);
+    if (PyErr_Occurred()) {
+        return NULL;
     }
 
     const GLMethods & gl = ctx->gl;
