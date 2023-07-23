@@ -1,5 +1,7 @@
+# mypy: ignore-errors
+
 import struct
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 
 class Attribute:
@@ -230,68 +232,68 @@ ATTRIBUTE_LOOKUP_TABLE = {
 }
 
 UNIFORM_LOOKUP_TABLE = {
-    0x8B56: (False, 1, 4, '1i'),  # GL_BOOL
-    0x8B57: (False, 2, 8, '2i'),  # GL_BOOL_VEC2
-    0x8B58: (False, 3, 12, '3i'),  # GL_BOOL_VEC3
-    0x8B59: (False, 4, 16, '4i'),  # GL_BOOL_VEC4
-    0x1404: (False, 1, 4, '1i'),  # GL_INT
-    0x8B53: (False, 2, 8, '2i'),  # GL_INT_VEC2
-    0x8B54: (False, 3, 12, '3i'),  # GL_INT_VEC3
-    0x8B55: (False, 4, 16, '4i'),  # GL_INT_VEC4
-    0x1405: (False, 1, 4, '1I'),  # GL_UNSIGNED_INT
-    0x8DC6: (False, 2, 8, '2I'),  # GL_UNSIGNED_INT_VEC2
-    0x8DC7: (False, 3, 12, '3I'),  # GL_UNSIGNED_INT_VEC3
-    0x8DC8: (False, 4, 16, '4I'),  # GL_UNSIGNED_INT_VEC4
-    0x1406: (False, 1, 4, '1f'),  # GL_FLOAT
-    0x8B50: (False, 2, 8, '2f'),  # GL_FLOAT_VEC2
-    0x8B51: (False, 3, 12, '3f'),  # GL_FLOAT_VEC3
-    0x8B52: (False, 4, 16, '4f'),  # GL_FLOAT_VEC4
-    0x140A: (False, 1, 8, '1d'),  # GL_DOUBLE
-    0x8FFC: (False, 2, 16, '2d'),  # GL_DOUBLE_VEC2
-    0x8FFD: (False, 3, 24, '3d'),  # GL_DOUBLE_VEC3
-    0x8FFE: (False, 4, 32, '4d'),  # GL_DOUBLE_VEC4
-    0x8B5D: (False, 1, 4, '1i'),  # GL_SAMPLER_1D
-    0x8DC0: (False, 1, 4, '1i'),  # GL_SAMPLER_1D_ARRAY
-    0x8DC9: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_1D
-    0x8DCE: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_1D_ARRAY
-    0x8B5E: (False, 1, 4, '1i'),  # GL_SAMPLER_2D
-    0x8DCA: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_2D
-    0x8DD2: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_2D
-    0x8DC1: (False, 1, 4, '1i'),  # GL_SAMPLER_2D_ARRAY
-    0x8DCF: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_2D_ARRAY
-    0x8DD7: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_2D_ARRAY
-    0x8B5F: (False, 1, 4, '1i'),  # GL_SAMPLER_3D
-    0x8DCB: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_3D
-    0x8DD3: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_3D
-    0x8B62: (False, 1, 4, '1i'),  # GL_SAMPLER_2D_SHADOW
-    0x9108: (False, 1, 4, '1i'),  # GL_SAMPLER_2D_MULTISAMPLE
-    0x9109: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_2D_MULTISAMPLE
-    0x910A: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE
-    0x910B: (False, 1, 4, '1i'),  # GL_SAMPLER_2D_MULTISAMPLE_ARRAY
-    0x910C: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY
-    0x910D: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY
-    0x8B60: (False, 1, 4, '1i'),  # GL_SAMPLER_CUBE
-    0x8DCC: (False, 1, 4, '1i'),  # GL_INT_SAMPLER_CUBE
-    0x8DD4: (False, 1, 4, '1i'),  # GL_UNSIGNED_INT_SAMPLER_CUBE
-    0x904D: (False, 1, 4, '1i'),  # GL_IMAGE_2D
-    0x8B5A: (True, 4, 16, '4f'),  # GL_FLOAT_MAT2
-    0x8B65: (True, 6, 24, '6f'),  # GL_FLOAT_MAT2x3
-    0x8B66: (True, 8, 32, '8f'),  # GL_FLOAT_MAT2x4
-    0x8B67: (True, 6, 24, '6f'),  # GL_FLOAT_MAT3x2
-    0x8B5B: (True, 9, 36, '9f'),  # GL_FLOAT_MAT3
-    0x8B68: (True, 12, 48, '12f'),  # GL_FLOAT_MAT3x4
-    0x8B69: (True, 8, 32, '8f'),  # GL_FLOAT_MAT4x2
-    0x8B6A: (True, 12, 48, '12f'),  # GL_FLOAT_MAT4x3
-    0x8B5C: (True, 16, 64, '16f'),  # GL_FLOAT_MAT4
-    0x8F46: (True, 4, 32, '4d'),  # GL_DOUBLE_MAT2
-    0x8F49: (True, 6, 48, '6d'),  # GL_DOUBLE_MAT2x3
-    0x8F4A: (True, 8, 64, '8d'),  # GL_DOUBLE_MAT2x4
-    0x8F4B: (True, 6, 48, '6d'),  # GL_DOUBLE_MAT3x2
-    0x8F47: (True, 9, 72, '9d'),  # GL_DOUBLE_MAT3
-    0x8F4C: (True, 12, 96, '12d'),  # GL_DOUBLE_MAT3x4
-    0x8F4D: (True, 8, 64, '8d'),  # GL_DOUBLE_MAT4x2
-    0x8F4E: (True, 12, 96, '12d'),  # GL_DOUBLE_MAT4x3
-    0x8F48: (True, 16, 128, '16d'),  # GL_DOUBLE_MAT4
+    0x8B56: (False, 1, 4, '1i'),
+    0x8B57: (False, 2, 8, '2i'),
+    0x8B58: (False, 3, 12, '3i'),
+    0x8B59: (False, 4, 16, '4i'),
+    0x1404: (False, 1, 4, '1i'),
+    0x8B53: (False, 2, 8, '2i'),
+    0x8B54: (False, 3, 12, '3i'),
+    0x8B55: (False, 4, 16, '4i'),
+    0x1405: (False, 1, 4, '1I'),
+    0x8DC6: (False, 2, 8, '2I'),
+    0x8DC7: (False, 3, 12, '3I'),
+    0x8DC8: (False, 4, 16, '4I'),
+    0x1406: (False, 1, 4, '1f'),
+    0x8B50: (False, 2, 8, '2f'),
+    0x8B51: (False, 3, 12, '3f'),
+    0x8B52: (False, 4, 16, '4f'),
+    0x140A: (False, 1, 8, '1d'),
+    0x8FFC: (False, 2, 16, '2d'),
+    0x8FFD: (False, 3, 24, '3d'),
+    0x8FFE: (False, 4, 32, '4d'),
+    0x8B5D: (False, 1, 4, '1i'),
+    0x8DC0: (False, 1, 4, '1i'),
+    0x8DC9: (False, 1, 4, '1i'),
+    0x8DCE: (False, 1, 4, '1i'),
+    0x8B5E: (False, 1, 4, '1i'),
+    0x8DCA: (False, 1, 4, '1i'),
+    0x8DD2: (False, 1, 4, '1i'),
+    0x8DC1: (False, 1, 4, '1i'),
+    0x8DCF: (False, 1, 4, '1i'),
+    0x8DD7: (False, 1, 4, '1i'),
+    0x8B5F: (False, 1, 4, '1i'),
+    0x8DCB: (False, 1, 4, '1i'),
+    0x8DD3: (False, 1, 4, '1i'),
+    0x8B62: (False, 1, 4, '1i'),
+    0x9108: (False, 1, 4, '1i'),
+    0x9109: (False, 1, 4, '1i'),
+    0x910A: (False, 1, 4, '1i'),
+    0x910B: (False, 1, 4, '1i'),
+    0x910C: (False, 1, 4, '1i'),
+    0x910D: (False, 1, 4, '1i'),
+    0x8B60: (False, 1, 4, '1i'),
+    0x8DCC: (False, 1, 4, '1i'),
+    0x8DD4: (False, 1, 4, '1i'),
+    0x904D: (False, 1, 4, '1i'),
+    0x8B5A: (True, 4, 16, '4f'),
+    0x8B65: (True, 6, 24, '6f'),
+    0x8B66: (True, 8, 32, '8f'),
+    0x8B67: (True, 6, 24, '6f'),
+    0x8B5B: (True, 9, 36, '9f'),
+    0x8B68: (True, 12, 48, '12f'),
+    0x8B69: (True, 8, 32, '8f'),
+    0x8B6A: (True, 12, 48, '12f'),
+    0x8B5C: (True, 16, 64, '16f'),
+    0x8F46: (True, 4, 32, '4d'),
+    0x8F49: (True, 6, 48, '6d'),
+    0x8F4A: (True, 8, 64, '8d'),
+    0x8F4B: (True, 6, 48, '6d'),
+    0x8F47: (True, 9, 72, '9d'),
+    0x8F4C: (True, 12, 96, '12d'),
+    0x8F4D: (True, 8, 64, '8d'),
+    0x8F4E: (True, 12, 96, '12d'),
+    0x8F48: (True, 16, 128, '16d'),
 }
 
 
@@ -364,6 +366,245 @@ def make_varying(name, number, array_length, dimension):
     res.array_length = array_length
     res.dimension = dimension
     return res
+
+
+class Spv:
+    INT32 = 1 << 0
+    INT64 = 1 << 1
+    UINT32 = 1 << 2
+    UINT64 = 1 << 3
+    FLOAT32 = 1 << 4
+    FLOAT64 = 1 << 5
+
+    VEC2 = 1 << 10
+    VEC3 = 1 << 11
+    VEC4 = 1 << 12
+
+    MAT2 = 1 << 20
+    MAT3 = 1 << 21
+    MAT4 = 1 << 22
+    
+    NONE = 0
+    UNKNOWN = 1 << 30
+
+
+TRANSLATION_TABLE_SPIRV_GLSL = {
+    Spv.INT32: 0x1404,
+    Spv.INT32 | Spv.VEC2: 0x8b53,
+    Spv.INT32 | Spv.VEC3: 0x8b54,
+    Spv.INT32 | Spv.VEC4: 0x8b55,
+    Spv.UINT32: 0x1405,
+    Spv.UINT32 | Spv.VEC2: 0x8dc6,
+    Spv.UINT32 | Spv.VEC3: 0x8dc7,
+    Spv.UINT32 | Spv.VEC4: 0x8dc8,
+    Spv.FLOAT32: 0x1406,
+    Spv.FLOAT32 | Spv.VEC2: 0x8b50,
+    Spv.FLOAT32 | Spv.VEC3: 0x8b51,
+    Spv.FLOAT32 | Spv.VEC4: 0x8b52,
+    Spv.FLOAT64: 0x140a,
+    Spv.FLOAT64 | Spv.VEC2: 0x8ffc,
+    Spv.FLOAT64 | Spv.VEC3: 0x8ffd,
+    Spv.FLOAT64 | Spv.VEC4: 0x8ffe,
+    Spv.FLOAT32 | Spv.VEC2 | Spv.MAT2: 0x8b5a,
+    Spv.FLOAT32 | Spv.VEC3 | Spv.MAT2: 0x8b65,
+    Spv.FLOAT32 | Spv.VEC4 | Spv.MAT2: 0x8b66,
+    Spv.FLOAT32 | Spv.VEC2 | Spv.MAT3: 0x8b67,
+    Spv.FLOAT32 | Spv.VEC3 | Spv.MAT3: 0x8b5b,
+    Spv.FLOAT32 | Spv.VEC4 | Spv.MAT3: 0x8b68,
+    Spv.FLOAT32 | Spv.VEC2 | Spv.MAT4: 0x8b69,
+    Spv.FLOAT32 | Spv.VEC3 | Spv.MAT4: 0x8b6a,
+    Spv.FLOAT32 | Spv.VEC4 | Spv.MAT4: 0x8b5c,
+    Spv.FLOAT64 | Spv.VEC2 | Spv.MAT2: 0x8f46,
+    Spv.FLOAT64 | Spv.VEC3 | Spv.MAT2: 0x8f49,
+    Spv.FLOAT64 | Spv.VEC4 | Spv.MAT2: 0x8f4a,
+    Spv.FLOAT64 | Spv.VEC3 | Spv.MAT2: 0x8f4b,
+    Spv.FLOAT64 | Spv.VEC3 | Spv.MAT3: 0x8f47,
+    Spv.FLOAT64 | Spv.VEC4 | Spv.MAT3: 0x8f4c,
+    Spv.FLOAT64 | Spv.VEC2 | Spv.MAT4: 0x8f4d,
+    Spv.FLOAT64 | Spv.VEC3 | Spv.MAT4: 0x8f4e,
+    Spv.FLOAT64 | Spv.VEC4 | Spv.MAT4: 0x8f48,
+}
+
+
+def parse_spv_inputs(program: int, spv: bytes) -> Dict[int, Attribute]:
+    ui32 = struct.Struct('I')
+    token = lambda i: ui32.unpack(spv[i * 4 : i * 4 + 4])[0]
+    num_tokens = len(spv) // 4
+
+    if token(0) != 0x07230203 or len(spv) % 4 != 0:
+        raise ValueError('invalid spv')
+
+    idx = 5
+
+    extracted_names: Dict[int, str] = {}  # id : name
+    extracted_storage_class_id: Dict[int, int] = {}  # id : storage_class_id
+    extracted_constants: Dict[int, Tuple[int, bytes]] = {}  # const_id : (type_id, content)
+
+    pointer_variable: Dict[int, int] = {}  # id : pointer_type_id
+    pointer_allowed_types: Dict[int, int] = {}  # pointer_type_id : type_id
+    allowed_types: Dict[int, Tuple[int, int, int, int]] = {}  # type_id : (spv_type, type_id, arr_const_id, arr_length)
+
+    extracted_types: Dict[int, Tuple[int, int]] = {}  # id : (spv_type, arr_length)
+    extracted_location: Dict[int, int] = {}  # id : location
+    while idx < num_tokens:
+        args, opcode = token(idx) >> 16, token(idx) & 0xffff
+        if opcode == 5:  # OpName
+            # We can extract the name of some ids
+            name_start, name_end = (idx + 2) * 4, (idx + args) * 4
+            extracted_names[token(idx + 1)] = spv[name_start:name_end].rstrip(b'\x00').decode()
+
+        if opcode == 59:  # OpVariable
+            # We can extract if it is a vertex shader input or not
+            extracted_storage_class_id[token(idx + 2)] = token(idx + 3)
+
+            # Mapping pointer_type_id to id of user variables
+            pointer_variable[token(idx + 2)] = token(idx + 1)
+
+        if opcode == 71:  # OpDecorate
+            # We can extract the location here
+            extracted_location[token(idx + 1)] = token(idx + 3)
+
+        if opcode == 32:  # OpTypePointer
+            # Retrieving used (allowed) type_ids for pointer_type_ids
+            pointer_allowed_types[token(idx + 1)] = token(idx + 3)
+
+        if opcode == 21:  # OpTypeInt
+            unsg, bsz = token(idx + 3), token(idx + 2) // 8
+            to_write = Spv.UNKNOWN
+            if unsg == 1:
+                if bsz == 4:
+                    to_write = Spv.UINT32
+                elif bsz == 8:
+                    to_write = Spv.UINT64
+            else:
+                if bsz == 4:
+                    to_write = Spv.INT32
+                elif bsz == 8:
+                    to_write = Spv.INT64
+            allowed_types[token(idx + 1)] = (to_write, -1, -1, -1)
+
+        if opcode == 22:  # OpTypeFloat
+            to_write = Spv.UNKNOWN
+            bsz = token(idx + 2) // 8
+            if bsz == 4:
+                to_write = Spv.FLOAT32
+            elif bsz == 8:
+                to_write = Spv.FLOAT64
+            allowed_types[token(idx + 1)] = (to_write, -1, -1, -1)
+
+        if opcode == 23:  # OpTypeVector
+            to_write = Spv.UNKNOWN
+            vsz = token(idx + 3)
+            if vsz == 2:
+                to_write = Spv.VEC2
+            elif vsz == 3:
+                to_write = Spv.VEC3
+            elif vsz == 4:
+                to_write = Spv.VEC4
+
+            allowed_types[token(idx + 1)] = (to_write, token(idx + 2), -1, -1)
+
+        if opcode == 24:  # OpTypeMatrix
+            to_write = Spv.UNKNOWN
+            msz = token(idx + 3)
+            if msz == 2:
+                to_write = Spv.MAT2
+            elif msz == 3:
+                to_write = Spv.MAT3
+            elif msz == 4:
+                to_write = Spv.MAT4
+
+            allowed_types[token(idx + 1)] = (to_write, token(idx + 2), -1, -1)
+
+        if opcode == 28:  # OpTypeArray
+            allowed_types[token(idx + 1)] = (Spv.NONE, token(idx + 2), token(idx + 3), -1)
+
+        if opcode == 43:  # OpConstant
+            # OpConstant is needed to extract the length of arrays
+            # However, it can be used for other purposes
+            content_start, content_end = (idx + 3) * 4, (idx + args) * 4
+            extracted_constants[token(idx+2)] = (token(idx+1),
+                spv[content_start:content_end])
+
+        idx += args
+
+    # Assembly types
+    # Some types of variables have pointers to other types of variables used in them.
+    # So we use endless research to identify complete types of variables.
+    def decode_constant(const_id):
+        type_id, content = extracted_constants[const_id]
+        typ, _ = assembly(type_id)
+        if typ == Spv.INT32:
+            return struct.unpack('i', content[:4])[0]
+        elif typ == Spv.INT64:
+            return struct.unpack('q', content[:8])[0]
+        elif typ == Spv.UINT32:
+            return struct.unpack('I', content[:4])[0]
+        elif typ == Spv.UINT64:
+            return struct.unpack('Q', content[:8])[0]
+        elif typ == Spv.FLOAT32:
+            return struct.unpack('f', content[:4])[0]
+        elif typ == Spv.FLOAT64:
+            return struct.unpack('d', content[:8])[0]
+        else:
+            return 0
+
+    def assembly(type_id):
+        typ, thrw_typ, arr_const_id, arr_length = allowed_types[type_id]
+        if arr_const_id != -1 and arr_length == -1:
+            arr_length = decode_constant(arr_const_id)
+
+        if thrw_typ != -1:
+            add_typ, multi_arr_length = assembly(thrw_typ)
+            typ = add_typ | typ
+            arr_length = arr_length * multi_arr_length
+        
+        allowed_types[type_id] = (typ, -1, -1, arr_length if arr_length > 0 else 1)
+
+        return typ, arr_length
+
+    for type_id in allowed_types.keys():
+        assembly(type_id)
+    for ids, pointer_type_id in pointer_variable.items():
+        type_id = pointer_allowed_types[pointer_type_id]
+        if type_id in allowed_types:
+            extracted_types[ids] = (allowed_types[type_id][0], allowed_types[type_id][3])
+
+    # Making a whole list
+    exrtacted_general_ids: List[int] = sorted(set([
+        *extracted_location.keys(),
+        *extracted_types.keys(),
+        *extracted_storage_class_id.keys(),
+        *extracted_names.keys(),
+    ]))
+
+    extracted_collected: Dict[int, Tuple[str, int, int, int, int]] = {}  # id : variable_info
+    for ids in exrtacted_general_ids:
+        # to_add: Tuple[str, int, int, int] = ()  # name, class, type, location, arr_length
+        name, cls, typ, location, arr_length = '', -1, -1, -1, -1
+        if ids in extracted_names:
+            name = extracted_names[ids]
+        if ids in extracted_storage_class_id:
+            cls = extracted_storage_class_id[ids]
+        if ids in extracted_types:
+            typ, arr_length = extracted_types[ids]
+        if ids in extracted_location:
+            location = extracted_location[ids]
+        extracted_collected[ids] = (name, cls, typ, location, arr_length)
+
+    # Conversion to the GLSL type
+    for ids, item in extracted_collected.items():
+        if item[2] == -1 or item[2] not in TRANSLATION_TABLE_SPIRV_GLSL:
+            continue
+
+        extracted_collected[ids] = (item[0], item[1], TRANSLATION_TABLE_SPIRV_GLSL[item[2]], item[3], item[4])
+
+    # Cropping the data to the required output
+    return {
+        location: make_attribute(name, gltype, program, location, arr_length)
+        for name, cls, gltype, location, arr_length in extracted_collected.values()
+        if cls == 1 and location != -1 and gltype != -1
+    }
 
 
 class InvalidObject:
