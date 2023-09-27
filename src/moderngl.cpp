@@ -95,6 +95,7 @@ struct MGLContext {
     PyObject * extensions;
     MGLFramebuffer * default_framebuffer;
     MGLFramebuffer * bound_framebuffer;
+    PyObject * includes;
     int version_code;
     int max_samples;
     int max_integer_samples;
@@ -106,6 +107,8 @@ struct MGLContext {
     int front_face;
     int cull_face;
     int depth_func;
+    bool depth_clamp;
+    double depth_range[2];
     int blend_func_src;
     int blend_func_dst;
     bool wireframe;
@@ -2967,6 +2970,10 @@ PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
         }
 
         if (PyUnicode_Check(shaders[i])) {
+            shaders[i] = PyObject_CallMethod(helper, "resolve_includes", "(ON)", self, shaders[i]);
+            if (!shaders[i]) {
+                return NULL;
+            }
             const char * source_str = PyUnicode_AsUTF8(shaders[i]);
             gl.ShaderSource(shader_obj, 1, &source_str, NULL);
             gl.CompileShader(shader_obj);
@@ -9192,6 +9199,35 @@ int MGLContext_set_depth_func(MGLContext * self, PyObject * value) {
     return 0;
 }
 
+PyObject * MGLContext_get_depth_clamp_range(MGLContext * self) {
+    if (self->depth_clamp) {
+        return Py_BuildValue("dd", self->depth_range[0], 
+                             self->depth_range[1]);
+    }
+    return Py_None;
+}
+
+int MGLContext_set_depth_clamp_range(MGLContext * self, PyObject * value) {
+    if (value == Py_None) {
+        self->depth_clamp = false;
+        self->depth_range[0] = 0.0;
+        self->depth_range[1] = 1.0;
+        
+        self->gl.Disable(GL_DEPTH_CLAMP);
+        self->gl.DepthRange(self->depth_range[0], self->depth_range[1]);
+        return 0;
+    } else if (PyTuple_CheckExact(value) && PyTuple_Size(value) == 2) {
+        self->depth_clamp = true;
+        self->depth_range[0] = PyFloat_AsDouble(PyTuple_GetItem(value, 0));
+        self->depth_range[1] = PyFloat_AsDouble(PyTuple_GetItem(value, 1));
+        
+        self->gl.Enable(GL_DEPTH_CLAMP);
+        self->gl.DepthRange(self->depth_range[0], self->depth_range[1]);
+        return 0;
+    }
+    return -1;
+}
+
 PyObject * MGLContext_get_multisample(MGLContext * self) {
     return PyBool_FromLong(self->multisample);
 }
@@ -9250,6 +9286,11 @@ int MGLContext_set_polygon_offset(MGLContext * self, PyObject * value) {
     self->polygon_offset_factor = polygon_offset_factor;
     self->polygon_offset_units = polygon_offset_units;
     return 0;
+}
+
+PyObject * MGLContext_get_includes(MGLContext * self) {
+    Py_INCREF(self->includes);
+    return self->includes;
 }
 
 PyObject * MGLContext_get_default_texture_unit(MGLContext * self) {
@@ -9886,11 +9927,15 @@ PyObject * create_context(PyObject * self, PyObject * args, PyObject * kwargs) {
 
     Py_INCREF(ctx->default_framebuffer);
     ctx->bound_framebuffer = ctx->default_framebuffer;
+    ctx->includes = PyDict_New();
 
     ctx->enable_flags = 0;
     ctx->front_face = GL_CCW;
 
     ctx->depth_func = GL_LEQUAL;
+    ctx->depth_clamp = false;
+    ctx->depth_range[0] = 0.0;
+    ctx->depth_range[1] = 1.0;
     ctx->blend_func_src = GL_SRC_ALPHA;
     ctx->blend_func_dst = GL_ONE_MINUS_SRC_ALPHA;
 
@@ -10001,6 +10046,7 @@ PyGetSetDef MGLContext_getset[] = {
     {(char *)"point_size", (getter)MGLContext_get_point_size, (setter)MGLContext_set_point_size},
 
     {(char *)"depth_func", (getter)MGLContext_get_depth_func, (setter)MGLContext_set_depth_func},
+    {(char *)"depth_clamp_range", (getter)MGLContext_get_depth_clamp_range, (setter)MGLContext_set_depth_clamp_range},
     {(char *)"blend_func", (getter)MGLContext_get_blend_func, (setter)MGLContext_set_blend_func},
     {(char *)"blend_equation", (getter)MGLContext_get_blend_equation, (setter)MGLContext_set_blend_equation},
     {(char *)"multisample", (getter)MGLContext_get_multisample, (setter)MGLContext_set_multisample},
@@ -10022,6 +10068,7 @@ PyGetSetDef MGLContext_getset[] = {
 
     {(char *)"patch_vertices", (getter)MGLContext_get_patch_vertices, (setter)MGLContext_set_patch_vertices},
 
+    {(char *)"includes", (getter)MGLContext_get_includes, NULL},
     {(char *)"extensions", (getter)MGLContext_get_extensions, NULL},
     {(char *)"info", (getter)MGLContext_get_info, NULL},
     {(char *)"error", (getter)MGLContext_get_error, NULL},
