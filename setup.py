@@ -52,6 +52,7 @@ mgl = Extension(
     libraries=libraries[target],
     extra_compile_args=extra_compile_args[target],
     extra_link_args=extra_linker_args[target],
+    define_macros=[('PY_SSIZE_T_CLEAN', None)],
     sources=["src/moderngl.cpp"],
 )
 
@@ -94,7 +95,7 @@ project_urls = {
 
 setup(
     name="moderngl",
-    version="5.9.0.dev0",
+    version="5.9.0",
     description=short_description,
     long_description=long_description,
     long_description_content_type="text/markdown",
