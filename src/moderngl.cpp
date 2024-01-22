@@ -6589,17 +6589,15 @@ PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
     PyObject * content;
     MGLBuffer * index_buffer;
     int index_element_size;
-    int skip_errors;
 
     int args_ok = PyArg_ParseTuple(
         args,
-        "O!OOIp",
+        "O!OOI",
         MGLProgram_type,
         &program,
         &content,
         &index_buffer,
-        &index_element_size,
-        &skip_errors
+        &index_element_size
     );
 
     if (!args_ok) {
@@ -7781,9 +7779,15 @@ PyObject * MGLContext_write_uniform(MGLContext * self, PyObject * args) {
     int location;
     int gl_type;
     int array_length;
+    int element_size;
     Py_buffer view = {};
 
-    if (!PyArg_ParseTuple(args, "IIIIy*", &program_obj, &location, &gl_type, &array_length, &view)) {
+    if (!PyArg_ParseTuple(args, "IIIIIy*", &program_obj, &location, &gl_type, &array_length, &element_size, &view)) {
+        return NULL;
+    }
+
+    if ((int)view.len != array_length * element_size) {
+        MGLError_Set("invalid uniform size");
         return NULL;
     }
 
