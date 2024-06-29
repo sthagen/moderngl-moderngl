@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 
-__version__ = "6.0.0"
+__version__ = "5.11.0"
 
 
 def packager_imports():
@@ -1543,6 +1543,14 @@ class Context:
         res = Buffer.__new__(Buffer)
         res.mglo, res._size, res._glo = self.mglo.buffer(data, reserve, dynamic)
         res._dynamic = dynamic
+        res.ctx = self
+        res.extra = None
+        return res
+
+    def external_buffer(self, glo, size):
+        res = Buffer.__new__(Buffer)
+        res.mglo, res._size, res._glo = self.mglo.external_buffer(glo, size)
+        res._dynamic = False
         res.ctx = self
         res.extra = None
         return res
