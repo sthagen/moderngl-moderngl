@@ -94,7 +94,7 @@ project_urls = {
 
 setup(
     name="moderngl",
-    version="5.11.0",
+    version="5.11.1",
     description=short_description,
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -112,7 +112,8 @@ setup(
     ext_modules=[mgl],
     platforms=["any"],
     extras_require={
-        "headless": ["glcontext>=2.5.0"],
+        "headless": ["glcontext>=3.0.0"],
     },
+    install_requires=["glcontext>=3.0.0"],
     python_requires=">=3.7",
 )
