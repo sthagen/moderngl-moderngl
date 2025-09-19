@@ -83,7 +83,7 @@ class WaterMain(mglw.WindowConfig):
         self.angle_y = 30
 
         self.matrices = Matrices(glm.translate((0.0, 0.5, 0.0)), glm.lookAt(self.eye, (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)), glm.perspective(
-            45, self.aspect_ratio, 0.01, 100))
+            math.radians(60.0), self.aspect_ratio, 0.01, 100))
         self.renderer = Renderer(self.ctx)
         self.water = Water(ctx=self.ctx)
         self.center = glm.vec3(-0.4, -0.75, 0.2)
