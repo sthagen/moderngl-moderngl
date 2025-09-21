@@ -3,6 +3,7 @@
 # Copyright 2011 Evan Wallace
 # Released under the MIT license
 
+import math
 import re
 import moderngl
 from typing import Self
@@ -17,7 +18,7 @@ class Matrices:
         self._model = model or glm.identity(glm.mat4)
         self.view = view or glm.lookAt(
             (1.0, 1.0, 1.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-        self.projection = projection or glm.perspective(45.0, 1.0, 0.1, 1000.0)
+        self.projection = projection or glm.perspective(math.radians(60.0), 1.0, 0.1, 1000.0)
 
     @property
     def normal(self) -> glm.mat4:

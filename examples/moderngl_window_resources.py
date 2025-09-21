@@ -1,4 +1,5 @@
 import os
+import math
 
 import glm
 import moderngl
@@ -73,7 +74,7 @@ class Example(mglw.WindowConfig):
         self.vao = self.obj.root_nodes[0].mesh.vao.instance(self.program)
 
     def camera_matrix(self):
-        proj = glm.perspective(45.0, self.aspect_ratio, 0.1, 1000.0)
+        proj = glm.perspective(math.radians(60.0), self.aspect_ratio, 0.1, 1000.0)
         look = glm.lookAt((-85.0, -180.0, 140.0), (0.0, 0.0, 65.0), (0.0, 0.0, 1.0))
         return proj * look
 

@@ -55,7 +55,7 @@ class WaterSimulation(mglw.WindowConfig):
     def on_render(self, time, frame_time):
         angle = time * 0.2
         self.matrix.projection = glm.perspective(
-            45.0, self.aspect_ratio, 0.1, 1000.0)
+            math.radians(60.0), self.aspect_ratio, 0.1, 1000.0)
         self.matrix.view = glm.lookAt((np.cos(angle), np.sin(angle), 2.2),
                                       (0.0, 0.0, 0.0),
                                       (0.0, 0.0, 1.0),)
