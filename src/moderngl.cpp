@@ -1435,11 +1435,12 @@ struct AttachmentParameters {
     int height;
     int samples;
     int renderbuffer;
+    int layered;
     int glo;
 };
 
 static int attachment_parameters(PyObject * attachment, AttachmentParameters * parameters, int must_be_depth) {
-    int width = 0, height = 0, samples = 0, renderbuffer = 0, glo = 0, depth = 0;
+    int width = 0, height = 0, samples = 0, renderbuffer = 0, layered = 0, glo = 0, depth = 0;
 
     if (Py_TYPE(attachment) == MGLTexture_type) {
         MGLTexture * image = (MGLTexture *)attachment;
@@ -1449,6 +1450,18 @@ static int attachment_parameters(PyObject * attachment, AttachmentParameters * p
         samples = image->samples;
         glo = image->texture_obj;
         renderbuffer = 0;
+        layered = 0;
+    }
+
+    if (Py_TYPE(attachment) == MGLTextureArray_type) {
+        MGLTextureArray * image = (MGLTextureArray *)attachment;
+        depth = 0;
+        width = image->width;
+        height = image->height;
+        samples = 0;
+        glo = image->texture_obj;
+        renderbuffer = 0;
+        layered = 1;
     }
 
     if (Py_TYPE(attachment) == MGLRenderbuffer_type) {
@@ -1459,6 +1472,7 @@ static int attachment_parameters(PyObject * attachment, AttachmentParameters * p
         samples = image->samples;
         glo = image->renderbuffer_obj;
         renderbuffer = 1;
+        layered = 0;
     }
 
     if (parameters->valid) {
@@ -1474,6 +1488,7 @@ static int attachment_parameters(PyObject * attachment, AttachmentParameters * p
     parameters->height = height;
     parameters->samples = samples;
     parameters->renderbuffer = renderbuffer;
+    parameters->layered = layered;
     parameters->glo = glo;
     return 1;
 }
@@ -1523,9 +1538,11 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
         }
         if (params.renderbuffer) {
             gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_RENDERBUFFER, params.glo);
-        } else {
+        } else if (!params.layered) {
             int target = params.samples ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
             gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, params.glo, 0);
+        } else {
+            gl.FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, params.glo, 0);
         }
     }
 
