@@ -83,7 +83,7 @@ class Scene:
     def camera_matrix(self):
         now = pygame.time.get_ticks() / 1000.0
         eye = (math.cos(now) * 3.0, math.sin(now) * 3.0, 1.75)
-        proj = glm.perspective(45.0, 1.0, 0.1, 1000.0)
+        proj = glm.perspective(math.radians(60.0), 1.0, 0.1, 1000.0)
         look = glm.lookAt(eye, (0.0, 0.0, 0.5), (0.0, 0.0, 1.0))
         return proj * look
 
