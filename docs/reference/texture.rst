@@ -155,7 +155,7 @@ Methods
         >> texture.get_handle(resident=True)
         4294969856
 
-    Ths same handle is returned if the handle already exists.
+    This same handle is returned if the handle already exists.
 
     .. note:: Limitations from the OpenGL wiki
 

@@ -125,7 +125,7 @@ Attributes
 
     Accepted compare functions::
 
-        .compare_func = ''    # Disale depth comparison completely
+        .compare_func = ''    # Disable depth comparison completely
         sampler.compare_func = '<='  # GL_LEQUAL
         sampler.compare_func = '<'   # GL_LESS
         sampler.compare_func = '>='  # GL_GEQUAL

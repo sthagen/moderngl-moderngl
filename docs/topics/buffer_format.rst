@@ -123,7 +123,7 @@ The trailing ``/i`` means that consecutive values
 in the buffer are passed to successive `instances` during an instanced render
 call. So the same value is passed to every vertex within a particular instance.
 
-Buffers contining interleaved values are represented by multiple space
+Buffers containing interleaved values are represented by multiple space
 separated count-type-size triples. Hence:
 
 ``"2f 3u x /v"`` means:

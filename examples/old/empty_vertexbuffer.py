@@ -1,6 +1,6 @@
 """
 Render using empty Vertexbuffer.
-Renders 100 triangels emitted by a geometry shaders.
+Renders 100 triangles emitted by a geometry shader.
 In addition we test if instancing is working passing gl_InstanceID from the vertex shader.
 """
 

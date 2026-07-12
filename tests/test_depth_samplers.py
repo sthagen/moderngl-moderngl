@@ -178,7 +178,7 @@ def test_depth_sampler(
     depth_from_dbo = np.frombuffer(tex_depth.read(), dtype=np.dtype('f4')).reshape(size[::-1])
 
     ############################################################################
-    # EXPECTED DATAS
+    # EXPECTED DATA
     # It should have 0.5's where the triangle lies.
     ############################################################################
     np_triangle_raster = np_triangle_rasterized(size)
@@ -229,7 +229,7 @@ def test_sampler_shadow(
     fbo_depth, tex_depth = fbo_with_rasterized_triangle(prog_render_depth_pass, size)
 
     ############################################################################
-    # EXPECTED DATAS                                                                                                   #
+    # EXPECTED DATA                                                                                                   #
     # It should have 1's where the triangle lies.                                                                      #
     ############################################################################
     texel_shadowed = 1
@@ -288,7 +288,7 @@ def test_sampler_shadow_with_bilinear_interpolation(
     fbo_depth, tex_depth = fbo_with_rasterized_triangle(prog_render_depth_pass, size)
 
     ############################################################################
-    # EXPECTED DATAS                                                           #
+    # EXPECTED DATA                                                           #
     ############################################################################
     # Box filter (2x2) on triangle visibility rasterization
     # is similar to bilinear interpolation with samplerShadow

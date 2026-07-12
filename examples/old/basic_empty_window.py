@@ -21,12 +21,12 @@ class EmptyWindow(Example):
             (math.sin(time + 3) + 1.0) / 2,
         )
 
-    def resize(self, width: int, heigh: int):
+    def resize(self, width: int, height: int):
         """
-        Pick window resizes in case we need yo update
+        Pick window resizes in case we need to update
         internal states when this happens.
         """
-        print("Window resized to", width, heigh)
+        print("Window resized to", width, height)
 
     def iconify(self, iconify: bool):
         """Window hide/minimize and restore"""

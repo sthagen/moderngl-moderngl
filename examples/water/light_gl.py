@@ -339,13 +339,13 @@ class Shader:
         self.use_attributes = {name: self.program[name] for name in self.program
                                if isinstance(self.program[name], moderngl.Attribute)}
 
-    def draw_mesh(self, mesh: Mesh, matrices: Matrices = None, unifroms: dict = {}, mode=moderngl.TRIANGLES):
+    def draw_mesh(self, mesh: Mesh, matrices: Matrices = None, uniforms: dict = {}, mode=moderngl.TRIANGLES):
         if matrices is not None:
             for m_cap_name in self.use_matrices:
                 self.program[self.use_matrices[m_cap_name]].write(
                     matrices.get(m_cap_name))
-        for k in unifroms:
-            self.program[k] = unifroms[k]
+        for k in uniforms:
+            self.program[k] = uniforms[k]
         vao = mesh.vertex_array(self.ctx, self.program,
                                 self.prefix, self.use_attributes, mode)
         vao.render(mode)

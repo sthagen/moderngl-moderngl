@@ -191,7 +191,7 @@ colors = [
 ]
 colors_buf = ctx.buffer(struct.pack(f'{len(colors)}f', *colors))
 
-# Prepair render
+# Prepare render
 window_vao = ctx.vertex_array(window_program, [
     (vertex_buf, '3f', 'in_vert'),
     (colors_buf, '4f', 'in_color')
@@ -291,13 +291,13 @@ def get_rotation_matrix(rx, ry, rz, revers=True):
 # Define constants
 far = 10  # Camera projection far
 near = 0.001  # Camera projection near
-perpective = 1  # Select perpective/orthographic projection
+perspective = 1  # Select perspective/orthographic projection
 position = [0., 0.1, -0.4]  # Camera position
 rotate = [-20, 0, 0]  # Camera angle
 
 light_far = 10  # Light projection far
 light_near = 0.001  # Light projection near
-light_perspective = 0  # Select perpective/orthographic projection
+light_perspective = 0  # Select perspective/orthographic projection
 light_position = [0, 0.4, 0]  # Light position
 light_rotate = [-90, 0, 0]  # Light angle
 
@@ -311,7 +311,7 @@ window_vao.program['camera_aspect_ratio'] = \
     window_fbo.size[0]/window_fbo.size[1]
 window_vao.program['camera_position'] = position
 window_vao.program['camera_projection_matrix'] = \
-    get_projection_matrix(near, far, perpective)
+    get_projection_matrix(near, far, perspective)
 window_vao.program['camera_rotation_matrix'] = \
     get_rotation_matrix(*rotate, revers=False)
 window_vao.program['light_aspect_ratio'] = light_fbo.size[0]/light_fbo.size[1]

@@ -148,7 +148,7 @@ class Water:
     def add_drop(self, x: float, y: float, radius: float, strength: float):
         self.texture_b.draw_to(self.ctx)
         self.texture_a.use()
-        self.drop_shader.draw_mesh(self.panel, unifroms={
+        self.drop_shader.draw_mesh(self.panel, uniforms={
             "center": glm.vec2(x, y),
             "radius": radius,
             "strength": strength
@@ -158,7 +158,7 @@ class Water:
     def move_sphere(self, old_center, new_center, radius):
         self.texture_b.draw_to(self.ctx)
         self.texture_a.use()
-        self.sphere_shader.draw_mesh(self.panel, unifroms={
+        self.sphere_shader.draw_mesh(self.panel, uniforms={
             "oldCenter": old_center,
             "newCenter": new_center,
             "radius": radius
@@ -168,7 +168,7 @@ class Water:
     def step_simulation(self):
         self.texture_b.draw_to(self.ctx)
         self.texture_a.use()
-        self.update_shader.draw_mesh(self.panel, unifroms={
+        self.update_shader.draw_mesh(self.panel, uniforms={
             "delta": self.delta
         })
         self.swap()
@@ -176,7 +176,7 @@ class Water:
     def update_normals(self):
         self.texture_b.draw_to(self.ctx)
         self.texture_a.use()
-        self.normal_shader.draw_mesh(self.panel, unifroms={
+        self.normal_shader.draw_mesh(self.panel, uniforms={
             "delta": self.delta
         })
         self.swap()

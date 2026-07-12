@@ -20,7 +20,7 @@ The module object itself is responsible for creating a :py:class:`Context` objec
     Other backend specific settings are passed as keyword arguments.
 
     Context sharing is known to not work properly, please avoid using it.
-    There is a paramter `share` for that to attempt to create a shared context.
+    There is a parameter `share` for that to attempt to create a shared context.
 
     :param int require: OpenGL version code
     :param bool standalone: Headless flag

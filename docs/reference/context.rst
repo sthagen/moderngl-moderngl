@@ -863,7 +863,7 @@ Attributes
 
     To just get started with something you can try::
 
-        # Either push the geomtry away or pull it towards you
+        # Either push the geometry away or pull it towards you
         # with support for handling small to medium sloped geometry
         ctx.polygon_offset = 1.0, 1.0
         ctx.polygon_offset = -1.0, -1.0
@@ -876,8 +876,8 @@ Attributes
 
     The result of ``glGetError()`` but human readable.
 
-    This values is provided for debug purposes only and is likely to
-    reduce performace when used in a draw loop.
+    This value is provided for debug purposes only and is likely to
+    reduce performance when used in a draw loop.
 
 .. py:attribute:: Context.extensions
     :type: Set[str]
@@ -1125,28 +1125,28 @@ Primitive Modes
     :type: int
 
     These are special primitives that are expected to be used specifically with
-    geomtry shaders. These primitives give the geometry shader more vertices
+    geometry shaders. These primitives give the geometry shader more vertices
     to work with for each input primitive. Data needs to be duplicated in buffers.
 
 .. py:attribute:: Context.LINE_STRIP_ADJACENCY
     :type: int
 
     These are special primitives that are expected to be used specifically with
-    geomtry shaders. These primitives give the geometry shader more vertices
+    geometry shaders. These primitives give the geometry shader more vertices
     to work with for each input primitive. Data needs to be duplicated in buffers.
 
 .. py:attribute:: Context.TRIANGLES_ADJACENCY
     :type: int
 
     These are special primitives that are expected to be used specifically with
-    geomtry shaders. These primitives give the geometry shader more vertices
+    geometry shaders. These primitives give the geometry shader more vertices
     to work with for each input primitive. Data needs to be duplicated in buffers.
 
 .. py:attribute:: Context.TRIANGLE_STRIP_ADJACENCY
     :type: int
 
     These are special primitives that are expected to be used specifically with
-    geomtry shaders. These primitives give the geometry shader more vertices
+    geometry shaders. These primitives give the geometry shader more vertices
     to work with for each input primitive. Data needs to be duplicated in buffers.
 
 .. py:attribute:: Context.PATCHES
@@ -1283,17 +1283,17 @@ Blend Function Shortcuts
 .. py:attribute:: Context.DEFAULT_BLENDING
     :type: tuple
 
-    Shotcut for the default blending ``SRC_ALPHA, ONE_MINUS_SRC_ALPHA``
+    Shortcut for the default blending ``SRC_ALPHA, ONE_MINUS_SRC_ALPHA``
 
 .. py:attribute:: Context.ADDITIVE_BLENDING
     :type: tuple
 
-    Shotcut for additive blending ``ONE, ONE``
+    Shortcut for additive blending ``ONE, ONE``
 
 .. py:attribute:: Context.PREMULTIPLIED_ALPHA
     :type: tuple
 
-    Shotcut for blend mode when using premultiplied alpha ``SRC_ALPHA, ONE``
+    Shortcut for blend mode when using premultiplied alpha ``SRC_ALPHA, ONE``
 
 
 Blend Equations

@@ -84,7 +84,7 @@ class GeoSprites(Example):
                 // can pass an additional vec4 for specific texture coordinates.
 
                 // Each EmitVertex() emits values down the shader pipeline just like a single
-                // run of a vertex shader, but in geomtry shaders we can do it multiple times!
+                // run of a vertex shader, but in geometry shaders we can do it multiple times!
 
                 // Upper left
                 gl_Position = projection * vec4(rot * vec2(-hsize.x, hsize.y) + center, 0.0, 1.0);

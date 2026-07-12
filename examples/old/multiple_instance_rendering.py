@@ -86,15 +86,15 @@ class InstancedRendering(Example):
         self.pos_scale_buffer = self.ctx.buffer(position_scale.astype('f4'))
 
         # Index buffer (also called element buffer)
-        # There are 2 trianges to render
+        # There are 2 triangles to render
         #
         #     A, B, C
         #     B, C, D
-        render_indicies = np.array([
+        render_indices = np.array([
             0, 1, 2,
             1, 2, 3
         ])
-        self.index_buffer = self.ctx.buffer(render_indicies.astype('i4'))
+        self.index_buffer = self.ctx.buffer(render_indices.astype('i4'))
 
         # The vao_content is a list of 3-tuples (buffer, format, attribs)
         # the format can have an empty or '/v', '/i', '/r' ending.

@@ -6733,9 +6733,9 @@ static PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
 
     int content_len = (int)PyTuple_GET_SIZE(content);
 
-    // Allow empty vertextbuffers: https://github.com/moderngl/moderngl/issues/321
+    // Allow empty vertex buffers: https://github.com/moderngl/moderngl/issues/321
     // if (!content_len) {
-    // 	MGLError_Set("the content must not be emtpy");
+    // 	MGLError_Set("the content must not be empty");
     // 	return 0;
     // }
 

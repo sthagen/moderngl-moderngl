@@ -83,7 +83,7 @@ def test_cull_face(ctx,
         np.testing.assert_array_almost_equal(depth_from_dbo, expected_results)
 
     ############################################################################
-    # EXPECTED DATAS#
+    # EXPECTED DATA#
     # It should have 0.5's where the triangle lies.
     ############################################################################
     np_triangle_raster = np_triangle_rasterised(size)
@@ -92,7 +92,7 @@ def test_cull_face(ctx,
     _do_test_cull_face('back', np_triangle_raster)
 
     ############################################################################
-    # EXPECTED DATAS
+    # EXPECTED DATA
     # It should have 1.0's everywhere.
     ############################################################################
     np_clear_depth = np.full(size, 1.0)

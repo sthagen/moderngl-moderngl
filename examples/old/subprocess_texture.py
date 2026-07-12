@@ -3,7 +3,7 @@ Using a subprocess in python to calculate data on a separate core.
 Threads in python are not really suitable for this task because
 of the GIL and we would just be slowing down the main thread.
 
-This is a fairly simple example spawning a deamon thread that
+This is a fairly simple example spawning a daemon thread that
 throws new random textures on a queue that can be read back by
 the main process.
 

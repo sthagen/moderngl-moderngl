@@ -209,7 +209,7 @@ This version was originally meant to only add python 3.8 support,
 but a few additions and fixes where cherry-picked from the 5.6 branch.
 
 - Python 3.8 support
-- `Vertexarray`s can now be crated without any content.
+- `Vertexarray`s can now be created without any content.
 - `Context.blend_func` now supports separate blend functions for rgb and alpha.
 - Added `Context.blend_equation` supporting separate blend equations for rgb and alpha.
 
@@ -286,7 +286,7 @@ but a few additions and fixes where cherry-picked from the 5.6 branch.
 
 ### Fixed
 
-- comapre fuctions
+- compare functions
 
 ## [5.2.1](https://github.com/moderngl/moderngl/compare/5.2.0...5.2.1) - 2018-05-10
 
@@ -306,7 +306,7 @@ but a few additions and fixes where cherry-picked from the 5.6 branch.
 
 ### Fixed
 
-- tesselation control and tesselation evaluation shader being swapped when creating a program
+- tessellation control and tessellation evaluation shader being swapped when creating a program
 
 ## [5.1.0](https://github.com/moderngl/moderngl/compare/5.0.7...5.1.0) - 2018-04-28
 

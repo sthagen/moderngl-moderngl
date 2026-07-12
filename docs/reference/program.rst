@@ -136,7 +136,7 @@ Attributes
 .. py:attribute:: Program.is_transform
     :type: int
 
-    If this is a tranform program (no fragment shader).
+    If this is a transform program (no fragment shader).
 
 .. py:attribute:: Program.ctx
     :type: Context
@@ -147,7 +147,7 @@ Attributes
     :type: int
 
     The internal OpenGL object.
-    This values is provided for interoperability and debug purposes only.
+    This value is provided for interoperability and debug purposes only.
 
 .. py:attribute:: Program.extra
     :type: Any

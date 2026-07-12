@@ -309,7 +309,7 @@ class Renderer():
         self.caustic_texture.draw_to(self.ctx)
         self.ctx.clear()
         water.texture_a.use(0)
-        self.caustics_shader.draw_mesh(self.water_mesh, matrices, unifroms={
+        self.caustics_shader.draw_mesh(self.water_mesh, matrices, uniforms={
             "light": self.light_dir,
             "water": 0,
             "sphereCenter": self.sphere_center,
@@ -326,7 +326,7 @@ class Renderer():
         cull_face = ("front", "back")
         for idx in range(2):
             self.ctx.cull_face = cull_face[idx]
-            self.water_shaders[idx].draw_mesh(self.water_mesh, matrices, unifroms={
+            self.water_shaders[idx].draw_mesh(self.water_mesh, matrices, uniforms={
                 "light": self.light_dir,
                 "water": 0,
                 "tiles": 1,
@@ -341,7 +341,7 @@ class Renderer():
     def render_sphere(self, matrices: Matrices, water: Water):
         water.texture_a.use(0)
         self.caustic_texture.use(1)
-        self.sphere_shader.draw_mesh(self.sphere_mesh, matrices, unifroms={
+        self.sphere_shader.draw_mesh(self.sphere_mesh, matrices, uniforms={
             "light": self.light_dir,
             "water": 0,
             "causticTex": 1,
@@ -354,7 +354,7 @@ class Renderer():
         water.texture_a.use(0)
         self.tile_texture.use(1)
         self.caustic_texture.use(2)
-        self.cude_shader.draw_mesh(self.cube_mesh, matrices, unifroms={
+        self.cube_shader.draw_mesh(self.cube_mesh, matrices, uniforms={
             "light": self.light_dir,
             "water": 0,
             "tiles": 1,
