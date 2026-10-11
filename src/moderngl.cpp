@@ -121,6 +121,55 @@ struct MGLContext {
     bool released;
 };
 
+// Object lifetime rules
+//
+// * Every instance is allocated with tp_alloc (PyType_GenericAlloc), which returns zeroed memory.
+//   A field that was never filled in (e.g. `context` when a constructor fails half way) is NULL
+//   and the tp_dealloc functions below cope with that.
+// * Every object that has a `context` member owns exactly one strong reference to it. The
+//   reference is taken when the object is created and dropped in tp_dealloc, never in release().
+//   Consequently `obj->context` is a valid pointer for the whole lifetime of `obj`, also after
+//   `obj.release()`. release() frees the OpenGL object only.
+// * The same goes for every other object an object points at: the framebuffers of a scope, the
+//   program and index buffer of a vertex array, the samplers of a scope. The reference is taken
+//   when the pointer is set (a setter takes the new one before it drops the old one) and the
+//   object gives it back in tp_dealloc, never in release(). Methods may be called on a released
+//   object, they must not find a pointer to something that was freed.
+//   The one exception is the default and the bound framebuffer of a context: they would form a
+//   cycle with the reference the framebuffers hold to the context, so Context.release() drops them
+//   and everything that reads them checks context_released() first.
+// * Most objects keep themselves alive (the reference they are created with is only dropped by
+//   release()). This is independent of the above.
+// * The types are heap types: PyType_GenericAlloc takes a reference to the type for each instance
+//   and tp_dealloc has to give it back.
+
+template <typename T>
+static T * mgl_new(PyTypeObject * type) {
+    return (T *)type->tp_alloc(type, 0);
+}
+
+// tp_dealloc for every type that has a `context` member
+template <typename T>
+static void mgl_dealloc(PyObject * self) {
+    PyTypeObject * tp = Py_TYPE(self);
+    MGLContext * context = ((T *)self)->context;
+    tp->tp_free(self);
+    Py_XDECREF(context);
+    Py_DECREF(tp);
+}
+
+// Context.release() destroys the OpenGL context and drops what the context holds on to
+// (the default and the bound framebuffer, those pointers are NULL afterwards).
+// Anything that needs them must call this first and return an error if it is true.
+// The mgl.Context itself stays allocated as long as objects created from it exist.
+static bool context_released(MGLContext * context) {
+    if (context->released) {
+        MGLError_Set("the context was released");
+        return true;
+    }
+    return false;
+}
+
 struct Rect {
     int x, y, width, height;
 };
@@ -148,6 +197,7 @@ static int parse_rect(PyObject * arg, Rect * rect) {
         rect->height = PyLong_AsLong(PyTuple_GetItem(arg, 3));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else if (size == 2) {
@@ -155,9 +205,11 @@ static int parse_rect(PyObject * arg, Rect * rect) {
         rect->height = PyLong_AsLong(PyTuple_GetItem(arg, 1));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else {
+        Py_DECREF(arg);
         return 0;
     }
     Py_DECREF(arg);
@@ -195,6 +247,7 @@ static int parse_cube(PyObject * arg, Cube * cube) {
         cube->depth = PyLong_AsLong(PyTuple_GetItem(arg, 5));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else if (size == 3) {
@@ -203,9 +256,11 @@ static int parse_cube(PyObject * arg, Cube * cube) {
         cube->depth = PyLong_AsLong(PyTuple_GetItem(arg, 2));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else {
+        Py_DECREF(arg);
         return 0;
     }
     Py_DECREF(arg);
@@ -865,7 +920,14 @@ static PyObject * MGLContext_buffer(MGLContext * self, PyObject * args) {
         return 0;
     }
 
-    MGLBuffer * buffer = PyObject_New(MGLBuffer, MGLBuffer_type);
+    MGLBuffer * buffer = mgl_new<MGLBuffer>(MGLBuffer_type);
+    if (!buffer) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     buffer->released = false;
     buffer->external = false;
 
@@ -879,6 +941,9 @@ static PyObject * MGLContext_buffer(MGLContext * self, PyObject * args) {
 
     if (!buffer->buffer_obj) {
         MGLError_Set("cannot create buffer");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(buffer);
         return 0;
     }
@@ -905,9 +970,13 @@ static PyObject * MGLContext_external_buffer(MGLContext * self, PyObject * args)
         return NULL;
     }
 
-    MGLBuffer * buffer = PyObject_New(MGLBuffer, MGLBuffer_type);
+    MGLBuffer * buffer = mgl_new<MGLBuffer>(MGLBuffer_type);
+    if (!buffer) {
+        return 0;
+    }
+
     buffer->released = false;
-    buffer->external = false;
+    buffer->external = true;
 
     buffer->size = size;
     buffer->dynamic = false;
@@ -1019,8 +1088,9 @@ static PyObject * MGLBuffer_read_into(MGLBuffer * self, PyObject * args) {
         size = self->size - offset;
     }
 
-    if (offset < 0 || write_offset < 0 || offset + size > self->size) {
-        MGLError_Set("out of range");
+    // size is negative here if size=-1 was given with an offset past the end
+    if (offset < 0 || size < 0 || write_offset < 0 || offset + size > self->size) {
+        MGLError_Set("out of range offset = %zd or size = %zd", offset, size);
         return 0;
     }
 
@@ -1038,10 +1108,22 @@ static PyObject * MGLBuffer_read_into(MGLBuffer * self, PyObject * args) {
         return 0;
     }
 
+    if (size == 0) {
+        // Nothing to copy, and glMapBufferRange does not accept an empty range
+        PyBuffer_Release(&buffer_view);
+        Py_RETURN_NONE;
+    }
+
     const GLMethods & gl = self->context->gl;
 
     gl.BindBuffer(GL_ARRAY_BUFFER, self->buffer_obj);
     void * map = gl.MapBufferRange(GL_ARRAY_BUFFER, offset, size, GL_MAP_READ_BIT);
+
+    if (!map) {
+        MGLError_Set("cannot map the buffer");
+        PyBuffer_Release(&buffer_view);
+        return 0;
+    }
 
     char * ptr = (char *)buffer_view.buf + write_offset;
     memcpy(ptr, map, size);
@@ -1068,6 +1150,12 @@ static PyObject * MGLBuffer_write_chunks(MGLBuffer * self, PyObject * args) {
     );
 
     if (!args_ok) {
+        return 0;
+    }
+
+    // count is used as a divisor below
+    if (count <= 0) {
+        MGLError_Set("invalid count %zd", count);
         return 0;
     }
 
@@ -1201,11 +1289,28 @@ static PyObject * MGLBuffer_read_chunks_into(MGLBuffer * self, PyObject * args) 
         return 0;
     }
 
+    Py_ssize_t abs_step = step > 0 ? step : -step;
+
+    if (start < 0) {
+        start = self->size + start;
+    }
+
+    if (start < 0 || chunk_size < 0 || count < 0 || chunk_size > abs_step || start + chunk_size > self->size || start + count * step - step < 0 || start + count * step - step + chunk_size > self->size) {
+        MGLError_Set("size error");
+        return 0;
+    }
+
     Py_buffer buffer_view;
 
     int get_buffer = PyObject_GetBuffer(data, &buffer_view, PyBUF_WRITABLE);
     if (get_buffer < 0) {
         // Propagate the default error
+        return 0;
+    }
+
+    if (write_offset < 0 || buffer_view.len < write_offset + chunk_size * count) {
+        MGLError_Set("the buffer is too small");
+        PyBuffer_Release(&buffer_view);
         return 0;
     }
 
@@ -1218,6 +1323,7 @@ static PyObject * MGLBuffer_read_chunks_into(MGLBuffer * self, PyObject * args) 
 
     if (!read_ptr) {
         MGLError_Set("cannot map the buffer");
+        PyBuffer_Release(&buffer_view);
         return 0;
     }
 
@@ -1263,6 +1369,12 @@ static PyObject * MGLBuffer_clear(MGLBuffer * self, PyObject * args) {
             return 0;
         }
 
+        if (buffer_view.len == 0) {
+            MGLError_Set("the chunk cannot be empty");
+            PyBuffer_Release(&buffer_view);
+            return 0;
+        }
+
         if (size % buffer_view.len != 0) {
             MGLError_Set("the chunk does not fit the size");
             PyBuffer_Release(&buffer_view);
@@ -1280,6 +1392,9 @@ static PyObject * MGLBuffer_clear(MGLBuffer * self, PyObject * args) {
 
     if (!map) {
         MGLError_Set("cannot map the buffer");
+        if (chunk != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         return 0;
     }
 
@@ -1291,7 +1406,7 @@ static PyObject * MGLBuffer_clear(MGLBuffer * self, PyObject * args) {
             map[i] = src[i % divisor];
         }
     } else {
-        memset(map + offset, 0, size);
+        memset(map, 0, size);
     }
 
     gl.UnmapBuffer(GL_ARRAY_BUFFER);
@@ -1379,15 +1494,18 @@ static PyObject * MGLBuffer_bind_to_storage_buffer(MGLBuffer * self, PyObject * 
 }
 
 static PyObject * MGLBuffer_release(MGLBuffer * self, PyObject * args) {
-    if (self->released || self->external) {
+    if (self->released) {
         Py_RETURN_NONE;
     }
     self->released = true;
 
-    const GLMethods & gl = self->context->gl;
-    gl.DeleteBuffers(1, (GLuint *)&self->buffer_obj);
+    // An external buffer wraps an OpenGL object that belongs to someone else, never delete it.
+    // It still gives up the reference it keeps to itself, otherwise it could never be freed.
+    if (!self->external) {
+        const GLMethods & gl = self->context->gl;
+        gl.DeleteBuffers(1, (GLuint *)&self->buffer_obj);
+    }
 
-    Py_DECREF(self->context);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -1493,7 +1611,23 @@ static int attachment_parameters(PyObject * attachment, AttachmentParameters * p
     return 1;
 }
 
+// Gives up on a framebuffer that is only partly set up: deletes the OpenGL framebuffer, binds the one
+// that was bound before again and frees the object and the tuple of the color attachments (if any).
+static PyObject * framebuffer_failed(MGLContext * self, MGLFramebuffer * framebuffer, PyObject * color_attachments_arg, const char * message) {
+    const GLMethods & gl = self->gl;
+    gl.BindFramebuffer(GL_FRAMEBUFFER, self->bound_framebuffer->framebuffer_obj);
+    gl.DeleteFramebuffers(1, (GLuint *)&framebuffer->framebuffer_obj);
+    MGLError_Set("%s", message);
+    Py_DECREF(framebuffer);
+    Py_XDECREF(color_attachments_arg);
+    return NULL;
+}
+
 static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     PyObject * color_attachments_arg;
     PyObject * depth_attachment_arg;
 
@@ -1514,15 +1648,19 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
         return NULL;
     }
 
-    MGLFramebuffer * framebuffer = PyObject_New(MGLFramebuffer, MGLFramebuffer_type);
+    MGLFramebuffer * framebuffer = mgl_new<MGLFramebuffer>(MGLFramebuffer_type);
+    if (!framebuffer) {
+        Py_DECREF(color_attachments_arg);
+        return 0;
+    }
+
     framebuffer->released = false;
 
     framebuffer->framebuffer_obj = 0;
     gl.GenFramebuffers(1, (GLuint *)&framebuffer->framebuffer_obj);
 
     if (!framebuffer->framebuffer_obj) {
-        MGLError_Set("cannot create framebuffer");
-        return NULL;
+        return framebuffer_failed(self, framebuffer, color_attachments_arg, "cannot create framebuffer");
     }
 
     gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer->framebuffer_obj);
@@ -1533,8 +1671,7 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
     for (int i = 0; i < color_attachments_count; ++i) {
         PyObject * attachment = PyTuple_GetItem(color_attachments_arg, i);
         if (!attachment_parameters(attachment, &params, false)) {
-            MGLError_Set("invalid color attachment");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "invalid color attachment");
         }
         if (params.renderbuffer) {
             gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_RENDERBUFFER, params.glo);
@@ -1548,8 +1685,7 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
 
     if (depth_attachment_arg != Py_None) {
         if (!attachment_parameters(depth_attachment_arg, &params, true)) {
-            MGLError_Set("invalid depth attachment");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "invalid depth attachment");
         }
         if (params.renderbuffer) {
             gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, params.glo);
@@ -1560,8 +1696,7 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
     }
 
     if (!params.valid) {
-        MGLError_Set("missing attachments");
-        return NULL;
+        return framebuffer_failed(self, framebuffer, color_attachments_arg, "missing attachments");
     }
 
     if (!color_attachments_count) {
@@ -1574,36 +1709,28 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
 
     switch (status) {
         case GL_FRAMEBUFFER_UNDEFINED:
-            MGLError_Set("the framebuffer is not complete (UNDEFINED)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (UNDEFINED)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_ATTACHMENT)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_ATTACHMENT)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_MISSING_ATTACHMENT)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_MISSING_ATTACHMENT)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_DRAW_BUFFER)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_DRAW_BUFFER)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_READ_BUFFER)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_READ_BUFFER)");
 
         case GL_FRAMEBUFFER_UNSUPPORTED:
-            MGLError_Set("the framebuffer is not complete (UNSUPPORTED)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (UNSUPPORTED)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_MULTISAMPLE)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_MULTISAMPLE)");
 
         case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-            MGLError_Set("the framebuffer is not complete (INCOMPLETE_LAYER_TARGETS)");
-            return NULL;
+            return framebuffer_failed(self, framebuffer, color_attachments_arg, "the framebuffer is not complete (INCOMPLETE_LAYER_TARGETS)");
     }
 
     framebuffer->draw_buffers_len = color_attachments_count;
@@ -1633,6 +1760,10 @@ static PyObject * MGLContext_framebuffer(MGLContext * self, PyObject * args) {
 }
 
 static PyObject * MGLContext_empty_framebuffer(MGLContext * self, PyObject * args) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     int width;
     int height;
     int layers = 0;
@@ -1644,7 +1775,11 @@ static PyObject * MGLContext_empty_framebuffer(MGLContext * self, PyObject * arg
 
     const GLMethods & gl = self->gl;
 
-    MGLFramebuffer * framebuffer = PyObject_New(MGLFramebuffer, MGLFramebuffer_type);
+    MGLFramebuffer * framebuffer = mgl_new<MGLFramebuffer>(MGLFramebuffer_type);
+    if (!framebuffer) {
+        return 0;
+    }
+
     framebuffer->released = false;
 
     framebuffer->framebuffer_obj = 0;
@@ -1712,8 +1847,7 @@ static PyObject * MGLContext_empty_framebuffer(MGLContext * self, PyObject * arg
                 break;
         }
 
-        MGLError_Set(message);
-        return 0;
+        return framebuffer_failed(self, framebuffer, NULL, message);
     }
 
     framebuffer->draw_buffers_len = 0;
@@ -1743,7 +1877,6 @@ static PyObject * MGLFramebuffer_release(MGLFramebuffer * self, PyObject * args)
 
     if (self->framebuffer_obj) {
         self->context->gl.DeleteFramebuffers(1, (GLuint *)&self->framebuffer_obj);
-        Py_DECREF(self->context);
     }
 
     Py_DECREF(self);
@@ -1751,6 +1884,10 @@ static PyObject * MGLFramebuffer_release(MGLFramebuffer * self, PyObject * args)
 }
 
 static PyObject * MGLFramebuffer_clear(MGLFramebuffer * self, PyObject * args) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     float r, g, b, a, depth;
     PyObject * viewport_arg;
 
@@ -1820,6 +1957,10 @@ static PyObject * MGLFramebuffer_clear(MGLFramebuffer * self, PyObject * args) {
 }
 
 static PyObject * MGLFramebuffer_use(MGLFramebuffer * self, PyObject * args) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     const GLMethods & gl = self->context->gl;
 
     gl.BindFramebuffer(GL_FRAMEBUFFER, self->framebuffer_obj);
@@ -1861,6 +2002,10 @@ static PyObject * MGLFramebuffer_use(MGLFramebuffer * self, PyObject * args) {
 }
 
 static PyObject * MGLFramebuffer_read_into(MGLFramebuffer * self, PyObject * args) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     PyObject * data;
     PyObject * viewport_arg;
     int components;
@@ -1987,6 +2132,10 @@ static PyObject * MGLFramebuffer_get_viewport(MGLFramebuffer * self, void * clos
 }
 
 static int MGLFramebuffer_set_viewport(MGLFramebuffer * self, PyObject * value, void * closure) {
+    if (context_released(self->context)) {
+        return -1;
+    }
+
     Rect viewport_rect = {};
     if (!parse_rect(value, &viewport_rect)) {
         MGLError_Set("wrong values in the viewport");
@@ -2013,6 +2162,10 @@ static PyObject * MGLFramebuffer_get_scissor(MGLFramebuffer * self, void * closu
 }
 
 static int MGLFramebuffer_set_scissor(MGLFramebuffer * self, PyObject * value, void * closure) {
+    if (context_released(self->context)) {
+        return -1;
+    }
+
     if (value == Py_None) {
         self->scissor = rect(0, 0, self->width, self->height);
         self->scissor_enabled = false;
@@ -2071,6 +2224,7 @@ static int parse_mask(PyObject * arg, char * value) {
         return 0;
     }
     if (PyTuple_Size(arg) != 4) {
+        Py_DECREF(arg);
         return 0;
     }
     char mask = 0;
@@ -2080,6 +2234,7 @@ static int parse_mask(PyObject * arg, char * value) {
     mask |= PyObject_IsTrue(PyTuple_GetItem(arg, 3)) ? 8 : 0;
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
     *value = mask;
@@ -2088,6 +2243,10 @@ static int parse_mask(PyObject * arg, char * value) {
 }
 
 static int MGLFramebuffer_set_color_mask(MGLFramebuffer * self, PyObject * value, void * closure) {
+    if (context_released(self->context)) {
+        return -1;
+    }
+
     if (self->draw_buffers_len == 1) {
         if (!parse_mask(value, &self->color_mask[0])) {
             MGLError_Set("invalid color mask");
@@ -2102,9 +2261,16 @@ static int MGLFramebuffer_set_color_mask(MGLFramebuffer * self, PyObject * value
             return -1;
         }
         int count = (int)PyTuple_Size(value);
+        int capacity = (int)(sizeof(self->color_mask) / sizeof(self->color_mask[0]));
+        if (count > capacity) {
+            Py_DECREF(value);
+            MGLError_Set("too many color masks (%d), the maximum is %d", count, capacity);
+            return -1;
+        }
         for (int i = 0; i < count; ++i) {
             PyObject * mask = PyTuple_GetItem(value, i);
             if (!parse_mask(mask, &self->color_mask[i])) {
+                Py_DECREF(value);
                 MGLError_Set("invalid color mask");
                 return -1;
             }
@@ -2127,6 +2293,10 @@ static PyObject * MGLFramebuffer_get_depth_mask(MGLFramebuffer * self, void * cl
 }
 
 static int MGLFramebuffer_set_depth_mask(MGLFramebuffer * self, PyObject * value, void * closure) {
+    if (context_released(self->context)) {
+        return -1;
+    }
+
     if (value == Py_True) {
         self->depth_mask = true;
     } else if (value == Py_False) {
@@ -2145,6 +2315,10 @@ static int MGLFramebuffer_set_depth_mask(MGLFramebuffer * self, PyObject * value
 }
 
 static PyObject * MGLFramebuffer_get_bits(MGLFramebuffer * self, void * closure) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     if (self->framebuffer_obj) {
         MGLError_Set("only the default_framebuffer have bits");
         return 0;
@@ -2194,6 +2368,34 @@ static PyObject * MGLFramebuffer_get_bits(MGLFramebuffer * self, void * closure)
     return result;
 }
 
+// Gives up on a program that is only partly set up. Deletes the OpenGL objects that were created
+// (program_obj, shader_objs and shader_obj are 0 / NULL for what does not exist or was deleted already),
+// frees the program and the tuple of the varyings (NULL if that was given back already).
+// The caller sets the error.
+static PyObject * program_failed(MGLContext * self, MGLProgram * program, PyObject * varyings_arg, int program_obj, const int * shader_objs, int shader_obj) {
+    const GLMethods & gl = self->gl;
+
+    if (shader_objs) {
+        for (int i = 0; i < NUM_SHADER_SLOTS; ++i) {
+            if (shader_objs[i]) {
+                gl.DeleteShader(shader_objs[i]);
+            }
+        }
+    }
+
+    if (shader_obj) {
+        gl.DeleteShader(shader_obj);
+    }
+
+    if (program_obj) {
+        gl.DeleteProgram(program_obj);
+    }
+
+    Py_DECREF(program);
+    Py_XDECREF(varyings_arg);
+    return NULL;
+}
+
 static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
     PyObject * shaders[8];
     PyObject * varyings_arg;
@@ -2229,7 +2431,12 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
 
     int varyings_count = (int)PyTuple_Size(varyings_arg);
 
-    MGLProgram * program = PyObject_New(MGLProgram, MGLProgram_type);
+    MGLProgram * program = mgl_new<MGLProgram>(MGLProgram_type);
+    if (!program) {
+        Py_DECREF(varyings_arg);
+        return 0;
+    }
+
     program->released = false;
 
     Py_INCREF(self);
@@ -2241,7 +2448,7 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
 
     if (!program_obj) {
         MGLError_Set("cannot create program");
-        return 0;
+        return program_failed(self, program, varyings_arg, 0, NULL, 0);
     }
 
     int shader_objs[] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -2254,13 +2461,13 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
         int shader_obj = gl.CreateShader(SHADER_TYPE[i]);
         if (!shader_obj) {
             MGLError_Set("cannot create shader");
-            return 0;
+            return program_failed(self, program, varyings_arg, program_obj, shader_objs, 0);
         }
 
         if (PyObject_HasAttrString(shaders[i], "to_shader_source")) {
             shaders[i] = PyObject_CallMethod(shaders[i], "to_shader_source", NULL);
             if (!shaders[i]) {
-                return NULL;
+                return program_failed(self, program, varyings_arg, program_obj, shader_objs, shader_obj);
             }
         } else {
             Py_INCREF(shaders[i]);
@@ -2269,7 +2476,7 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
         if (PyUnicode_Check(shaders[i])) {
             shaders[i] = PyObject_CallMethod(helper, "resolve_includes", "(ON)", self, shaders[i]);
             if (!shaders[i]) {
-                return NULL;
+                return program_failed(self, program, varyings_arg, program_obj, shader_objs, shader_obj);
             }
             const char * source_str = PyUnicode_AsUTF8(shaders[i]);
             gl.ShaderSource(shader_obj, 1, &source_str, NULL);
@@ -2287,7 +2494,8 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
             }
         } else {
             MGLError_Set("wrong shader source type");
-            return NULL;
+            Py_DECREF(shaders[i]);
+            return program_failed(self, program, varyings_arg, program_obj, shader_objs, shader_obj);
         }
 
         Py_DECREF(shaders[i]);
@@ -2333,7 +2541,7 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
             MGLError_Set("%s\n\n%s\n%s\n%s\n", message, title, underline, log);
 
             delete[] log;
-            return 0;
+            return program_failed(self, program, varyings_arg, program_obj, shader_objs, 0);
         }
 
         shader_objs[i] = shader_obj;
@@ -2346,7 +2554,7 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
             PyObject * item = PyTuple_GetItem(varyings_arg, i);
             if (!PyUnicode_Check(item)) {
                 MGLError_Set("invalid varyings");
-                return NULL;
+                return program_failed(self, program, varyings_arg, program_obj, shader_objs, 0);
             }
             varyings_array[i] = PyUnicode_AsUTF8(item);
         }
@@ -2354,6 +2562,9 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
         int capture_mode = interleaved ? GL_INTERLEAVED_ATTRIBS : GL_SEPARATE_ATTRIBS;
         gl.TransformFeedbackVaryings(program_obj, varyings_count, varyings_array, capture_mode);
     }
+
+    Py_DECREF(varyings_arg);
+    varyings_arg = NULL;
 
     {
         PyObject * key = NULL;
@@ -2393,7 +2604,7 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
         MGLError_Set("%s\n\n%s\n%s\n%s\n", message, title, underline, log);
 
         delete[] log;
-        return 0;
+        return program_failed(self, program, varyings_arg, 0, NULL, 0);
     }
 
     program->program_obj = program_obj;
@@ -2515,11 +2726,8 @@ static PyObject * MGLContext_program(MGLContext * self, PyObject * args) {
     }
 
     if (PyErr_Occurred()) {
-        Py_DECREF(program);
-        return 0;
+        return program_failed(self, program, varyings_arg, program_obj, NULL, 0);
     }
-
-    Py_INCREF(program);
 
     int num_attributes = 0;
     int num_varyings = 0;
@@ -2773,7 +2981,11 @@ static PyObject * MGLContext_query(MGLContext * self, PyObject * args) {
         primitives_generated = 1;
     }
 
-    MGLQuery * query = PyObject_New(MGLQuery, MGLQuery_type);
+    MGLQuery * query = mgl_new<MGLQuery>(MGLQuery_type);
+    if (!query) {
+        return 0;
+    }
+
     query->query_obj[SAMPLES_PASSED] = 0;
     query->query_obj[ANY_SAMPLES_PASSED] = 0;
     query->query_obj[TIME_ELAPSED] = 0;
@@ -2894,6 +3106,34 @@ static PyObject * MGLQuery_end_render(MGLQuery * self, PyObject * args) {
     Py_RETURN_NONE;
 }
 
+// Unlike the other objects a query keeps no reference to itself, the reference it is created
+// with belongs to the Python object. It is freed when that goes away, whether it was released or not.
+static PyObject * MGLQuery_release(MGLQuery * self, PyObject * args) {
+    if (self->released) {
+        Py_RETURN_NONE;
+    }
+    self->released = true;
+
+    // The OpenGL objects went away with the context if it was released
+    if (!self->context->released) {
+        const GLMethods & gl = self->context->gl;
+        for (int i = 0; i < 4; ++i) {
+            if (self->query_obj[i]) {
+                gl.DeleteQueries(1, (GLuint *)&self->query_obj[i]);
+            }
+        }
+    }
+
+    // Nothing to begin, end or read anymore
+    for (int i = 0; i < 4; ++i) {
+        self->query_obj[i] = 0;
+    }
+    self->state = QUERY_INACTIVE;
+    self->ended = false;
+
+    Py_RETURN_NONE;
+}
+
 static PyObject * MGLQuery_get_samples(MGLQuery * self, void * closure) {
     if (!self->query_obj[SAMPLES_PASSED]) {
         MGLError_Set("query created without the samples_passed flag");
@@ -2984,7 +3224,11 @@ static PyObject * MGLContext_sampler(MGLContext * self, PyObject * args) {
 
     const GLMethods & gl = self->gl;
 
-    MGLSampler * sampler = PyObject_New(MGLSampler, MGLSampler_type);
+    MGLSampler * sampler = mgl_new<MGLSampler>(MGLSampler_type);
+    if (!sampler) {
+        return 0;
+    }
+
     sampler->released = false;
 
     gl.GenSamplers(1, (GLuint *)&sampler->sampler_obj);
@@ -3071,7 +3315,6 @@ static PyObject * MGLSampler_release(MGLSampler * self, PyObject * args) {
     gl.DeleteSamplers(1, (GLuint *)&self->sampler_obj);
 
     Py_DECREF(self);
-    Py_DECREF(self->context);
     Py_RETURN_NONE;
 }
 
@@ -3144,14 +3387,19 @@ static PyObject * MGLSampler_get_filter(MGLSampler * self, void * closure) {
 
 static int parse_filter(PyObject * arg, int * min_filter_value, int * mag_filter_value) {
     arg = PySequence_Tuple(arg);
-    if (!arg || PyTuple_Size(arg) != 2) {
+    if (!arg) {
         PyErr_Clear();
+        return 0;
+    }
+    if (PyTuple_Size(arg) != 2) {
+        Py_DECREF(arg);
         return 0;
     }
     int min_filter = PyLong_AsLong(PyTuple_GetItem(arg, 0));
     int mag_filter = PyLong_AsLong(PyTuple_GetItem(arg, 1));
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3217,8 +3465,12 @@ static PyObject * MGLSampler_get_border_color(MGLSampler * self, void * closure)
 
 static int parse_color(PyObject * arg, float * value) {
     arg = PySequence_Tuple(arg);
-    if (!arg || PyTuple_Size(arg) != 4) {
+    if (!arg) {
         PyErr_Clear();
+        return 0;
+    }
+    if (PyTuple_Size(arg) != 4) {
+        Py_DECREF(arg);
         return 0;
     }
     float r = (float)PyFloat_AsDouble(PyTuple_GetItem(arg, 0));
@@ -3227,6 +3479,7 @@ static int parse_color(PyObject * arg, float * value) {
     float a = (float)PyFloat_AsDouble(PyTuple_GetItem(arg, 3));
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3281,8 +3534,12 @@ static int MGLSampler_set_max_lod(MGLSampler * self, PyObject * value, void * cl
 
 static int parse_texture_binding(PyObject * arg, TextureBinding * value) {
     arg = PySequence_Tuple(arg);
-    if (!arg || PyTuple_Size(arg) != 2) {
+    if (!arg) {
         PyErr_Clear();
+        return 0;
+    }
+    if (PyTuple_Size(arg) != 2) {
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3309,12 +3566,14 @@ static int parse_texture_binding(PyObject * arg, TextureBinding * value) {
     }
 
     if (!texture_obj || !texture_obj) {
+        Py_DECREF(arg);
         return 0;
     }
 
     int location = PyLong_AsLong(PyTuple_GetItem(arg, 1));
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3327,8 +3586,12 @@ static int parse_texture_binding(PyObject * arg, TextureBinding * value) {
 
 static int parse_buffer_binding(PyObject * arg, BufferBinding * value) {
     arg = PySequence_Tuple(arg);
-    if (!arg || PyTuple_Size(arg) != 2) {
+    if (!arg) {
         PyErr_Clear();
+        return 0;
+    }
+    if (PyTuple_Size(arg) != 2) {
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3341,12 +3604,14 @@ static int parse_buffer_binding(PyObject * arg, BufferBinding * value) {
     }
 
     if (!buffer_obj) {
+        Py_DECREF(arg);
         return 0;
     }
 
     int location = PyLong_AsLong(PyTuple_GetItem(arg, 1));
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3358,8 +3623,12 @@ static int parse_buffer_binding(PyObject * arg, BufferBinding * value) {
 
 static int parse_sampler_binding(PyObject * arg, SamplerBinding * value) {
     arg = PySequence_Tuple(arg);
-    if (!arg || PyTuple_Size(arg) != 2) {
+    if (!arg) {
         PyErr_Clear();
+        return 0;
+    }
+    if (PyTuple_Size(arg) != 2) {
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3377,6 +3646,7 @@ static int parse_sampler_binding(PyObject * arg, SamplerBinding * value) {
     int location = PyLong_AsLong(PyTuple_GetItem(arg, 1));
     if (PyErr_Occurred()) {
         PyErr_Clear();
+        Py_DECREF(arg);
         return 0;
     }
 
@@ -3388,7 +3658,27 @@ static int parse_sampler_binding(PyObject * arg, SamplerBinding * value) {
     return 1;
 }
 
+// Gives up on a scope that is only partly set up: frees it with everything it took, and the argument tuples
+// (the ones that were not created yet, and the scope itself if it was not allocated yet, are NULL)
+static PyObject * scope_failed(MGLScope * scope, PyObject * textures_arg, PyObject * uniform_buffers_arg, PyObject * storage_buffers_arg, PyObject * samplers_arg, const char * message) {
+    if (message) {
+        MGLError_Set("%s", message);
+    } else {
+        PyErr_NoMemory();
+    }
+    Py_XDECREF(scope);
+    Py_XDECREF(textures_arg);
+    Py_XDECREF(uniform_buffers_arg);
+    Py_XDECREF(storage_buffers_arg);
+    Py_XDECREF(samplers_arg);
+    return NULL;
+}
+
 static PyObject * MGLContext_scope(MGLContext * self, PyObject * args) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     MGLFramebuffer * framebuffer;
     PyObject * enable_flags;
     PyObject * textures_arg;
@@ -3415,41 +3705,44 @@ static PyObject * MGLContext_scope(MGLContext * self, PyObject * args) {
     textures_arg = PySequence_Tuple(textures_arg);
     if (!textures_arg) {
         PyErr_Clear();
-        MGLError_Set("invalid textures");
-        return NULL;
+        return scope_failed(NULL, NULL, NULL, NULL, NULL, "invalid textures");
     }
 
     uniform_buffers_arg = PySequence_Tuple(uniform_buffers_arg);
     if (!uniform_buffers_arg) {
         PyErr_Clear();
-        MGLError_Set("invalid uniform buffers");
-        return NULL;
+        return scope_failed(NULL, textures_arg, NULL, NULL, NULL, "invalid uniform buffers");
     }
 
     storage_buffers_arg = PySequence_Tuple(storage_buffers_arg);
     if (!storage_buffers_arg) {
         PyErr_Clear();
-        MGLError_Set("invalid storage buffers");
-        return NULL;
+        return scope_failed(NULL, textures_arg, uniform_buffers_arg, NULL, NULL, "invalid storage buffers");
     }
 
     samplers_arg = PySequence_Tuple(samplers_arg);
     if (!samplers_arg) {
         PyErr_Clear();
-        MGLError_Set("invalid samplers");
-        return NULL;
+        return scope_failed(NULL, textures_arg, uniform_buffers_arg, storage_buffers_arg, NULL, "invalid samplers");
     }
 
     int flags = MGL_INVALID;
     if (enable_flags != Py_None) {
         flags = PyLong_AsLong(enable_flags);
         if (PyErr_Occurred()) {
-            MGLError_Set("invalid enable_flags");
-            return 0;
+            return scope_failed(NULL, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, "invalid enable_flags");
         }
     }
 
-    MGLScope * scope = PyObject_New(MGLScope, MGLScope_type);
+    MGLScope * scope = mgl_new<MGLScope>(MGLScope_type);
+    if (!scope) {
+        Py_DECREF(textures_arg);
+        Py_DECREF(uniform_buffers_arg);
+        Py_DECREF(storage_buffers_arg);
+        Py_DECREF(samplers_arg);
+        return 0;
+    }
+
     scope->released = false;
 
     Py_INCREF(self);
@@ -3468,36 +3761,37 @@ static PyObject * MGLContext_scope(MGLContext * self, PyObject * args) {
     scope->num_storage_buffers = (int)PyTuple_Size(storage_buffers_arg);
     scope->num_samplers = (int)PyTuple_Size(samplers_arg);
 
-    scope->textures = (TextureBinding *)PyMem_Malloc(scope->num_textures * sizeof(TextureBinding));
-    scope->uniform_buffers = (BufferBinding *)PyMem_Malloc(scope->num_uniform_buffers * sizeof(BufferBinding));
-    scope->storage_buffers = (BufferBinding *)PyMem_Malloc(scope->num_storage_buffers * sizeof(BufferBinding));
-    scope->samplers = (SamplerBinding *)PyMem_Malloc(scope->num_samplers * sizeof(SamplerBinding));
+    // Zeroed, so a scope that fails half way can be freed (the sampler objects are released in tp_dealloc)
+    scope->textures = (TextureBinding *)PyMem_Calloc(scope->num_textures, sizeof(TextureBinding));
+    scope->uniform_buffers = (BufferBinding *)PyMem_Calloc(scope->num_uniform_buffers, sizeof(BufferBinding));
+    scope->storage_buffers = (BufferBinding *)PyMem_Calloc(scope->num_storage_buffers, sizeof(BufferBinding));
+    scope->samplers = (SamplerBinding *)PyMem_Calloc(scope->num_samplers, sizeof(SamplerBinding));
+
+    if (!scope->textures || !scope->uniform_buffers || !scope->storage_buffers || !scope->samplers) {
+        return scope_failed(scope, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, NULL);
+    }
 
     for (int i = 0; i < scope->num_textures; ++i) {
         if (!parse_texture_binding(PyTuple_GetItem(textures_arg, i), &scope->textures[i])) {
-            MGLError_Set("invalid textures");
-            return NULL;
+            return scope_failed(scope, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, "invalid textures");
         }
     }
 
     for (int i = 0; i < scope->num_uniform_buffers; ++i) {
         if (!parse_buffer_binding(PyTuple_GetItem(uniform_buffers_arg, i), &scope->uniform_buffers[i])) {
-            MGLError_Set("invalid uniform buffers");
-            return NULL;
+            return scope_failed(scope, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, "invalid uniform buffers");
         }
     }
 
     for (int i = 0; i < scope->num_storage_buffers; ++i) {
         if (!parse_buffer_binding(PyTuple_GetItem(storage_buffers_arg, i), &scope->storage_buffers[i])) {
-            MGLError_Set("invalid storage buffers");
-            return NULL;
+            return scope_failed(scope, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, "invalid storage buffers");
         }
     }
 
     for (int i = 0; i < scope->num_samplers; ++i) {
         if (!parse_sampler_binding(PyTuple_GetItem(samplers_arg, i), &scope->samplers[i])) {
-            MGLError_Set("invalid samplers");
-            return NULL;
+            return scope_failed(scope, textures_arg, uniform_buffers_arg, storage_buffers_arg, samplers_arg, "invalid samplers");
         }
     }
 
@@ -3511,6 +3805,10 @@ static PyObject * MGLContext_scope(MGLContext * self, PyObject * args) {
 }
 
 static PyObject * MGLScope_begin(MGLScope * self, PyObject * args) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     const GLMethods & gl = self->context->gl;
     const int & flags = self->enable_flags;
 
@@ -3574,6 +3872,10 @@ static PyObject * MGLScope_begin(MGLScope * self, PyObject * args) {
 }
 
 static PyObject * MGLScope_end(MGLScope * self, PyObject * args) {
+    if (context_released(self->context)) {
+        return 0;
+    }
+
     const GLMethods & gl = self->context->gl;
     const int & flags = self->old_enable_flags;
 
@@ -3620,10 +3922,6 @@ static PyObject * MGLScope_release(MGLScope * self, PyObject * args) {
     }
     self->released = true;
 
-    Py_DECREF(self->framebuffer);
-    Py_DECREF(self->old_framebuffer);
-
-    Py_DECREF(self->context);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -3696,7 +3994,11 @@ static PyObject * MGLContext_texture(MGLContext * self, PyObject * args) {
     if (use_renderbuffer) {
         const GLMethods & gl = self->gl;
 
-        MGLRenderbuffer * renderbuffer = PyObject_New(MGLRenderbuffer, MGLRenderbuffer_type);
+        MGLRenderbuffer * renderbuffer = mgl_new<MGLRenderbuffer>(MGLRenderbuffer_type);
+        if (!renderbuffer) {
+            return 0;
+        }
+
         renderbuffer->released = false;
 
         int format = data_type->internal_format[components];
@@ -3765,7 +4067,14 @@ static PyObject * MGLContext_texture(MGLContext * self, PyObject * args) {
 
     gl.ActiveTexture(GL_TEXTURE0 + self->default_texture_unit);
 
-    MGLTexture * texture = PyObject_New(MGLTexture, MGLTexture_type);
+    MGLTexture * texture = mgl_new<MGLTexture>(MGLTexture_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
     texture->external = false;
 
@@ -3774,6 +4083,9 @@ static PyObject * MGLContext_texture(MGLContext * self, PyObject * args) {
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -3865,7 +4177,11 @@ static PyObject * MGLContext_depth_texture(MGLContext * self, PyObject * args) {
     if (use_renderbuffer) {
         const GLMethods & gl = self->gl;
 
-        MGLRenderbuffer * renderbuffer = PyObject_New(MGLRenderbuffer, MGLRenderbuffer_type);
+        MGLRenderbuffer * renderbuffer = mgl_new<MGLRenderbuffer>(MGLRenderbuffer_type);
+        if (!renderbuffer) {
+            return 0;
+        }
+
         renderbuffer->released = false;
 
         renderbuffer->renderbuffer_obj = 0;
@@ -3930,7 +4246,14 @@ static PyObject * MGLContext_depth_texture(MGLContext * self, PyObject * args) {
 
     gl.ActiveTexture(GL_TEXTURE0 + self->default_texture_unit);
 
-    MGLTexture * texture = PyObject_New(MGLTexture, MGLTexture_type);
+    MGLTexture * texture = mgl_new<MGLTexture>(MGLTexture_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
     texture->external = false;
 
@@ -3939,6 +4262,9 @@ static PyObject * MGLContext_depth_texture(MGLContext * self, PyObject * args) {
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -4013,7 +4339,11 @@ static PyObject * MGLContext_external_texture(MGLContext * self, PyObject * args
         return 0;
     }
 
-    MGLTexture * texture = PyObject_New(MGLTexture, MGLTexture_type);
+    MGLTexture * texture = mgl_new<MGLTexture>(MGLTexture_type);
+    if (!texture) {
+        return 0;
+    }
+
     texture->released = false;
     texture->external = true;
 
@@ -4433,15 +4763,18 @@ static PyObject * MGLTexture_get_handle(MGLTexture * self, PyObject * args) {
 }
 
 static PyObject * MGLTexture_release(MGLTexture * self, PyObject * args) {
-    if (self->released || self->external) {
+    if (self->released) {
         Py_RETURN_NONE;
     }
     self->released = true;
 
-    const GLMethods & gl = self->context->gl;
-    gl.DeleteTextures(1, (GLuint *)&self->texture_obj);
+    // An external texture wraps an OpenGL object that belongs to someone else, never delete it.
+    // It still gives up the reference it keeps to itself, otherwise it could never be freed.
+    if (!self->external) {
+        const GLMethods & gl = self->context->gl;
+        gl.DeleteTextures(1, (GLuint *)&self->texture_obj);
+    }
 
-    Py_DECREF(self->context);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -4737,7 +5070,14 @@ static PyObject * MGLContext_texture3d(MGLContext * self, PyObject * args) {
 
     const GLMethods & gl = self->gl;
 
-    MGLTexture3D * texture = PyObject_New(MGLTexture3D, MGLTexture3D_type);
+    MGLTexture3D * texture = mgl_new<MGLTexture3D>(MGLTexture3D_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
 
     texture->texture_obj = 0;
@@ -4745,6 +5085,9 @@ static PyObject * MGLContext_texture3d(MGLContext * self, PyObject * args) {
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -5113,7 +5456,6 @@ static PyObject * MGLTexture3D_release(MGLTexture3D * self, PyObject * args) {
     const GLMethods & gl = self->context->gl;
     gl.DeleteTextures(1, (GLuint *)&self->texture_obj);
 
-    Py_DECREF(self->context);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -5364,7 +5706,14 @@ static PyObject * MGLContext_texture_array(MGLContext * self, PyObject * args) {
 
     gl.ActiveTexture(GL_TEXTURE0 + self->default_texture_unit);
 
-    MGLTextureArray * texture = PyObject_New(MGLTextureArray, MGLTextureArray_type);
+    MGLTextureArray * texture = mgl_new<MGLTextureArray>(MGLTextureArray_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
 
     texture->texture_obj = 0;
@@ -5372,6 +5721,9 @@ static PyObject * MGLContext_texture_array(MGLContext * self, PyObject * args) {
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -5762,7 +6114,6 @@ static PyObject * MGLTextureArray_release(MGLTextureArray * self, PyObject * arg
     const GLMethods & gl = self->context->gl;
     gl.DeleteTextures(1, (GLuint *)&self->texture_obj);
 
-    Py_DECREF(self->context);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -6003,7 +6354,14 @@ static PyObject * MGLContext_texture_cube(MGLContext * self, PyObject * args) {
 
     const GLMethods & gl = self->gl;
 
-    MGLTextureCube * texture = PyObject_New(MGLTextureCube, MGLTextureCube_type);
+    MGLTextureCube * texture = mgl_new<MGLTextureCube>(MGLTextureCube_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
 
     texture->texture_obj = 0;
@@ -6011,6 +6369,9 @@ static PyObject * MGLContext_texture_cube(MGLContext * self, PyObject * args) {
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -6126,7 +6487,14 @@ static PyObject * MGLContext_depth_texture_cube(MGLContext * self, PyObject * ar
 
     const GLMethods & gl = self->gl;
 
-    MGLTextureCube * texture = PyObject_New(MGLTextureCube, MGLTextureCube_type);
+    MGLTextureCube * texture = mgl_new<MGLTextureCube>(MGLTextureCube_type);
+    if (!texture) {
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
+        return 0;
+    }
+
     texture->released = false;
 
     texture->texture_obj = 0;
@@ -6134,6 +6502,9 @@ static PyObject * MGLContext_depth_texture_cube(MGLContext * self, PyObject * ar
 
     if (!texture->texture_obj) {
         MGLError_Set("cannot create texture");
+        if (data != Py_None) {
+            PyBuffer_Release(&buffer_view);
+        }
         Py_DECREF(texture);
         return 0;
     }
@@ -6538,8 +6909,6 @@ static PyObject * MGLTextureCube_release(MGLTextureCube * self, PyObject * args)
     }
     self->released = true;
 
-    // TODO: decref
-
     const GLMethods & gl = self->context->gl;
     gl.DeleteTextures(1, (GLuint *)&self->texture_obj);
 
@@ -6701,6 +7070,15 @@ static int MGLTextureCube_set_anisotropy(MGLTextureCube * self, PyObject * value
     return 0;
 }
 
+// Gives up on a vertex array that is only partly set up: deletes the OpenGL vertex array and frees the object.
+// The caller sets the error.
+static PyObject * vertex_array_failed(MGLContext * self, MGLVertexArray * array) {
+    // glDeleteVertexArrays ignores 0
+    self->gl.DeleteVertexArrays(1, (GLuint *)&array->vertex_array_obj);
+    Py_DECREF(array);
+    return NULL;
+}
+
 static PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
     MGLProgram * program;
     PyObject * content;
@@ -6792,7 +7170,11 @@ static PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
 
     const GLMethods & gl = self->gl;
 
-    MGLVertexArray * array = PyObject_New(MGLVertexArray, MGLVertexArray_type);
+    MGLVertexArray * array = mgl_new<MGLVertexArray>(MGLVertexArray_type);
+    if (!array) {
+        return 0;
+    }
+
     array->released = false;
 
     array->num_vertices = 0;
@@ -6866,12 +7248,23 @@ static PyObject * MGLContext_vertex_array(MGLContext * self, PyObject * args) {
             PyObject * attribute_rows_length_py = PyObject_GetAttrString(attribute, "rows_length");
             PyObject * attribute_scalar_type_py = PyObject_GetAttrString(attribute, "scalar_type");
             if (!attribute_location_py || !attribute_rows_length_py || !attribute_scalar_type_py) {
-                return NULL;
+                Py_XDECREF(attribute_location_py);
+                Py_XDECREF(attribute_rows_length_py);
+                Py_XDECREF(attribute_scalar_type_py);
+                return vertex_array_failed(self, array);
             }
 
             int attribute_location = PyLong_AsLong(attribute_location_py);
             int attribute_rows_length = PyLong_AsLong(attribute_rows_length_py);
             int attribute_scalar_type = PyLong_AsLong(attribute_scalar_type_py);
+
+            Py_DECREF(attribute_location_py);
+            Py_DECREF(attribute_rows_length_py);
+            Py_DECREF(attribute_scalar_type_py);
+
+            if (PyErr_Occurred()) {
+                return vertex_array_failed(self, array);
+            }
 
             for (int r = 0; r < attribute_rows_length; ++r) {
                 int location = attribute_location + r;
@@ -7014,6 +7407,15 @@ static PyObject * MGLVertexArray_transform(MGLVertexArray * self, PyObject * arg
     if (!self->program->num_varyings) {
         MGLError_Set("the program has no varyings");
         return 0;
+    }
+
+    // The items are cast to MGLBuffer below. A released buffer's mglo is an InvalidObject.
+    Py_ssize_t num_output_items = PyList_GET_SIZE(outputs);
+    for (Py_ssize_t i = 0; i < num_output_items; ++i) {
+        if (!PyObject_TypeCheck(PyList_GET_ITEM(outputs, i), MGLBuffer_type)) {
+            MGLError_Set("invalid output buffer at index %d (released or not a buffer)", (int)i);
+            return 0;
+        }
     }
 
     if (vertices < 0) {
@@ -7218,8 +7620,6 @@ static PyObject * MGLVertexArray_release(MGLVertexArray * self, PyObject * args)
     const GLMethods & gl = self->context->gl;
     gl.DeleteVertexArrays(1, (GLuint *)&self->vertex_array_obj);
 
-    Py_DECREF(self->program);
-    Py_XDECREF(self->index_buffer);
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -7675,6 +8075,10 @@ static PyObject * MGLContext_copy_buffer(MGLContext * self, PyObject * args) {
 }
 
 static PyObject * MGLContext_copy_framebuffer(MGLContext * self, PyObject * args) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     PyObject * dst;
     MGLFramebuffer * src;
 
@@ -7795,6 +8199,10 @@ static PyObject * MGLContext_copy_framebuffer(MGLContext * self, PyObject * args
 }
 
 static PyObject * MGLContext_detect_framebuffer(MGLContext * self, PyObject * args) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     PyObject * glo;
 
     int args_ok = PyArg_ParseTuple(
@@ -7865,7 +8273,11 @@ static PyObject * MGLContext_detect_framebuffer(MGLContext * self, PyObject * ar
         }
     }
 
-    MGLFramebuffer * framebuffer = PyObject_New(MGLFramebuffer, MGLFramebuffer_type);
+    MGLFramebuffer * framebuffer = mgl_new<MGLFramebuffer>(MGLFramebuffer_type);
+    if (!framebuffer) {
+        return 0;
+    }
+
     framebuffer->released = false;
 
     framebuffer->framebuffer_obj = framebuffer_obj;
@@ -7879,6 +8291,7 @@ static PyObject * MGLContext_detect_framebuffer(MGLContext * self, PyObject * ar
 
     framebuffer->depth_mask = true;
 
+    Py_INCREF(self);
     framebuffer->context = self;
 
     framebuffer->viewport = rect(0, 0, width, height);
@@ -7946,6 +8359,23 @@ static PyObject * MGLContext_release(MGLContext * self, PyObject * args) {
     }
 
     Py_DECREF(temp);
+
+    // The context owns its default and its bound framebuffer, and every framebuffer owns a
+    // reference to the context. Break that cycle here, otherwise the context could never be freed.
+    // The framebuffers keep the context alive for as long as they exist.
+    // The context must not be used after this (it has been destroyed above).
+
+    // The default framebuffer is part of the context: release it like Framebuffer.release() would
+    // (there is no OpenGL object to delete), so the reference it keeps to itself does not pin
+    // the context forever.
+    if (self->default_framebuffer && !self->default_framebuffer->released) {
+        self->default_framebuffer->released = true;
+        Py_DECREF(self->default_framebuffer);
+    }
+
+    Py_CLEAR(self->bound_framebuffer);
+    Py_CLEAR(self->default_framebuffer);
+
     Py_DECREF(self);
     Py_RETURN_NONE;
 }
@@ -8253,6 +8683,7 @@ static int parse_blend_func(PyObject * arg, int * value) {
         value[3] = PyLong_AsLong(PyTuple_GetItem(arg, 3));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else if (size == 2) {
@@ -8262,9 +8693,11 @@ static int parse_blend_func(PyObject * arg, int * value) {
         value[3] = value[1];
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else {
+        Py_DECREF(arg);
         return 0;
     }
     Py_DECREF(arg);
@@ -8308,6 +8741,7 @@ static int parse_blend_equation(PyObject * arg, int * value) {
         value[1] = PyLong_AsLong(PyTuple_GetItem(arg, 1));
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else if (size == 1) {
@@ -8315,9 +8749,11 @@ static int parse_blend_equation(PyObject * arg, int * value) {
         value[1] = value[0];
         if (PyErr_Occurred()) {
             PyErr_Clear();
+            Py_DECREF(arg);
             return 0;
         }
     } else {
+        Py_DECREF(arg);
         return 0;
     }
     Py_DECREF(arg);
@@ -8517,11 +8953,19 @@ static PyObject * MGLContext_get_max_debug_group_stack_depth(MGLContext * self, 
 }
 
 static MGLFramebuffer * MGLContext_get_fbo(MGLContext * self, void * closure) {
+    if (context_released(self)) {
+        return 0;
+    }
+
     Py_INCREF(self->bound_framebuffer);
     return self->bound_framebuffer;
 }
 
 static int MGLContext_set_fbo(MGLContext * self, PyObject * value, void * closure) {
+    if (context_released(self)) {
+        return -1;
+    }
+
     if (Py_TYPE(value) != MGLFramebuffer_type) {
         return -1;
     }
@@ -8933,6 +9377,21 @@ static PyObject * writable_bytes(PyObject * self, PyObject * arg) {
     return Py_BuildValue("(NN)", bytes, mem);
 }
 
+// Gives up on a context that is only partly set up. The reference to the OpenGL context (ctx->ctx)
+// and the rest is given back by tp_dealloc, but the context holds its default and its bound
+// framebuffer which hold the context: break that cycle like Context.release() does.
+static PyObject * create_context_failed(MGLContext * ctx) {
+    if (ctx->default_framebuffer && !ctx->default_framebuffer->released) {
+        ctx->default_framebuffer->released = true;
+        Py_DECREF(ctx->default_framebuffer);
+    }
+
+    Py_CLEAR(ctx->bound_framebuffer);
+    Py_CLEAR(ctx->default_framebuffer);
+    Py_DECREF(ctx);
+    return NULL;
+}
+
 static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kwargs) {
     PyObject * context = PyDict_GetItemString(kwargs, "context");
 
@@ -8949,13 +9408,17 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
         // Use the specified backend
         if (backend_name) {
             backend = PyObject_CallMethod(glcontext, "get_backend_by_name", "O", backend_name);
+            Py_DECREF(glcontext);
             if (backend == Py_None || backend == NULL) {
+                Py_XDECREF(backend);
                 return NULL;
             }
         // Use default backend
         } else {
             backend = PyObject_CallMethod(glcontext, "default_backend", NULL);
+            Py_DECREF(glcontext);
             if (backend == Py_None || backend == NULL) {
+                Py_XDECREF(backend);
                 MGLError_Set("glcontext: Could not get a default backend");
                 return NULL;
             }
@@ -8963,11 +9426,13 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
 
         // Ensure we have a callable
         if (!PyCallable_Check(backend)) {
+            Py_DECREF(backend);
             MGLError_Set("The returned glcontext is not a callable");
             return NULL;
         }
         // Create context by simply forwarding all arguments
         context = PyObject_Call(backend, args, kwargs);
+        Py_DECREF(backend);
         if (!context) {
             return NULL;
         }
@@ -8975,14 +9440,19 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
         Py_INCREF(context);
     }
 
-    MGLContext * ctx = PyObject_New(MGLContext, MGLContext_type);
+    MGLContext * ctx = mgl_new<MGLContext>(MGLContext_type);
+    if (!ctx) {
+        Py_DECREF(context);
+        return 0;
+    }
+
     ctx->released = false;
     ctx->wireframe = false;
     ctx->ctx = context;
 
     ctx->gl = load_gl_methods(context);
     if (PyErr_Occurred()) {
-        return NULL;
+        return create_context_failed(ctx);
     }
 
     const GLMethods & gl = ctx->gl;
@@ -9004,6 +9474,7 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
         const char * ext = (const char *)gl.GetStringi(GL_EXTENSIONS, i);
         PyObject * ext_name = PyUnicode_FromString(ext);
         PySet_Add(ctx->extensions, ext_name);
+        Py_XDECREF(ext_name);
     }
 
     gl.BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -9046,7 +9517,10 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
     gl.GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &bound_framebuffer);
 
     #ifdef __APPLE__
-    if (PyObject_HasAttrString(ctx->ctx, "standalone") && PyObject_IsTrue(PyObject_GetAttrString(ctx->ctx, "standalone"))) {
+    PyObject * standalone_attr = PyObject_HasAttrString(ctx->ctx, "standalone") ? PyObject_GetAttrString(ctx->ctx, "standalone") : NULL;
+    int standalone = standalone_attr ? PyObject_IsTrue(standalone_attr) : 0;
+    Py_XDECREF(standalone_attr);
+    if (standalone) {
         int renderbuffer = 0;
         gl.GenRenderbuffers(1, (GLuint *)&renderbuffer);
         gl.BindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
@@ -9060,7 +9534,11 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
     #endif
 
     {
-        MGLFramebuffer * framebuffer = PyObject_New(MGLFramebuffer, MGLFramebuffer_type);
+        MGLFramebuffer * framebuffer = mgl_new<MGLFramebuffer>(MGLFramebuffer_type);
+        if (!framebuffer) {
+            return create_context_failed(ctx);
+        }
+
         framebuffer->released = false;
 
         framebuffer->framebuffer_obj = 0;
@@ -9086,6 +9564,7 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
         framebuffer->color_mask[0] = 0xf;
         framebuffer->depth_mask = true;
 
+        Py_INCREF(ctx);
         framebuffer->context = ctx;
 
         Rect scissor_box = {};
@@ -9129,14 +9608,57 @@ static PyObject * create_context(PyObject * self, PyObject * args, PyObject * kw
     gl.GetError(); // clear errors
 
     if (PyErr_Occurred()) {
-        return 0;
+        return create_context_failed(ctx);
     }
 
     return Py_BuildValue("(Oi)", ctx, ctx->version_code);
 }
 
-static void default_dealloc(PyObject * self) {
-    Py_TYPE(self)->tp_free(self);
+static void MGLVertexArray_dealloc(PyObject * _self) {
+    MGLVertexArray * self = (MGLVertexArray *)_self;
+
+    // NULL if the vertex array was never fully created
+    Py_XDECREF(self->program);
+    Py_XDECREF(self->index_buffer);
+
+    mgl_dealloc<MGLVertexArray>(_self);
+}
+
+static void MGLScope_dealloc(PyObject * _self) {
+    MGLScope * self = (MGLScope *)_self;
+
+    // NULL if the scope was never fully created
+    Py_XDECREF(self->framebuffer);
+    Py_XDECREF(self->old_framebuffer);
+
+    if (self->samplers) {
+        for (int i = 0; i < self->num_samplers; ++i) {
+            Py_XDECREF(self->samplers[i].sampler);
+        }
+    }
+
+    PyMem_Free(self->textures);
+    PyMem_Free(self->uniform_buffers);
+    PyMem_Free(self->storage_buffers);
+    PyMem_Free(self->samplers);
+
+    mgl_dealloc<MGLScope>(_self);
+}
+
+static void MGLContext_dealloc(PyObject * _self) {
+    MGLContext * self = (MGLContext *)_self;
+    PyTypeObject * tp = Py_TYPE(self);
+
+    // All of these are NULL if the context was never fully created.
+    // The framebuffers are cleared by release() and the context cannot get here before that.
+    Py_XDECREF(self->bound_framebuffer);
+    Py_XDECREF(self->default_framebuffer);
+    Py_XDECREF(self->includes);
+    Py_XDECREF(self->extensions);
+    Py_XDECREF(self->ctx);
+
+    tp->tp_free(self);
+    Py_DECREF(tp);
 }
 
 static PyMethodDef MGL_module_methods[] = {
@@ -9299,7 +9821,7 @@ static PyMethodDef MGLQuery_methods[] = {
     {(char *)"end", (PyCFunction)MGLQuery_end, METH_NOARGS},
     {(char *)"begin_render", (PyCFunction)MGLQuery_begin_render, METH_NOARGS},
     {(char *)"end_render", (PyCFunction)MGLQuery_end_render, METH_NOARGS},
-    // {(char *)"release", (PyCFunction)MGLQuery_release, METH_NOARGS},
+    {(char *)"release", (PyCFunction)MGLQuery_release, METH_NOARGS},
     {},
 };
 
@@ -9446,90 +9968,90 @@ static PyType_Slot MGLBuffer_slots[] = {
     #endif
     {Py_tp_methods, MGLBuffer_methods},
     {Py_tp_getset, MGLBuffer_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLBuffer>},
     {},
 };
 
 static PyType_Slot MGLContext_slots[] = {
     {Py_tp_methods, MGLContext_methods},
     {Py_tp_getset, MGLContext_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)MGLContext_dealloc},
     {},
 };
 
 static PyType_Slot MGLFramebuffer_slots[] = {
     {Py_tp_methods, MGLFramebuffer_methods},
     {Py_tp_getset, MGLFramebuffer_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLFramebuffer>},
     {},
 };
 
 static PyType_Slot MGLProgram_slots[] = {
     {Py_tp_methods, MGLProgram_methods},
     {Py_tp_getset, MGLProgram_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLProgram>},
     {},
 };
 
 static PyType_Slot MGLQuery_slots[] = {
     {Py_tp_methods, MGLQuery_methods},
     {Py_tp_getset, MGLQuery_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLQuery>},
     {},
 };
 
 static PyType_Slot MGLRenderbuffer_slots[] = {
     {Py_tp_methods, MGLRenderbuffer_methods},
     {Py_tp_getset, MGLRenderbuffer_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLRenderbuffer>},
     {},
 };
 
 static PyType_Slot MGLScope_slots[] = {
     {Py_tp_methods, MGLScope_methods},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)MGLScope_dealloc},
     {},
 };
 
 static PyType_Slot MGLTexture_slots[] = {
     {Py_tp_methods, MGLTexture_methods},
     {Py_tp_getset, MGLTexture_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLTexture>},
     {},
 };
 
 static PyType_Slot MGLTextureArray_slots[] = {
     {Py_tp_methods, MGLTextureArray_methods},
     {Py_tp_getset, MGLTextureArray_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLTextureArray>},
     {},
 };
 
 static PyType_Slot MGLTextureCube_slots[] = {
     {Py_tp_methods, MGLTextureCube_methods},
     {Py_tp_getset, MGLTextureCube_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLTextureCube>},
     {},
 };
 
 static PyType_Slot MGLTexture3D_slots[] = {
     {Py_tp_methods, MGLTexture3D_methods},
     {Py_tp_getset, MGLTexture3D_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLTexture3D>},
     {},
 };
 
 static PyType_Slot MGLVertexArray_slots[] = {
     {Py_tp_methods, MGLVertexArray_methods},
     {Py_tp_getset, MGLVertexArray_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)MGLVertexArray_dealloc},
     {},
 };
 
 static PyType_Slot MGLSampler_slots[] = {
     {Py_tp_methods, MGLSampler_methods},
     {Py_tp_getset, MGLSampler_getset},
-    {Py_tp_dealloc, (void *)default_dealloc},
+    {Py_tp_dealloc, (void *)mgl_dealloc<MGLSampler>},
     {},
 };
 

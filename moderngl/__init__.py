@@ -19,7 +19,7 @@ try:
 except ImportError:
     pass
 
-__version__ = "5.12.0"
+__version__ = "5.13.0"
 
 _GL_DEBUG_SOURCE_THIRD_PARTY = 0x8249
 _GL_DEBUG_SOURCE_APPLICATION = 0x824A
@@ -113,7 +113,7 @@ class Buffer:
         return self.mglo.read_chunks(chunk_size, start, step, count)
 
     def read_chunks_into(self, buffer, chunk_size, start, step, count, write_offset=0):
-        return self.mglo.read(buffer, chunk_size, start, step, count, write_offset)
+        return self.mglo.read_chunks_into(buffer, chunk_size, start, step, count, write_offset)
 
     def clear(self, size=-1, offset=0, chunk=None):
         self.mglo.clear(size, offset, chunk)
@@ -161,6 +161,18 @@ class Query:
         self._label = None
         raise TypeError()
 
+    def __del__(self):
+        if not hasattr(self, "ctx"):
+            return
+
+        if isinstance(self.mglo, InvalidObject):
+            return
+
+        if self.ctx.gc_mode == "auto":
+            self.release()
+        elif self.ctx.gc_mode == "context_gc":
+            self.ctx.objects.append(self.mglo)
+
     def __enter__(self):
         self.mglo.begin()
         return self
@@ -179,6 +191,11 @@ class Query:
     @property
     def elapsed(self):
         return self.mglo.elapsed
+
+    def release(self):
+        if not isinstance(self.mglo, InvalidObject):
+            self.mglo.release()
+            self.mglo = InvalidObject()
 
 
 class ComputeShader:

@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [main](https://github.com/moderngl/moderngl/compare/5.10.0...main)
 
 - Add `Context.debug_scope`.
+- Fix memory leaks of objects created from a `Context` (programs, vertex arrays, renderbuffers, cube textures and queries kept their context alive forever).
+- Fix a use-after-free in `Sampler.release()` and a context reference dropped without being taken by `Framebuffer.release()` on framebuffers from `Context.detect_framebuffer()`.
+- A `Context` now stays allocated for as long as objects created from it exist, also after `Context.release()`.
+- Using the framebuffers and scopes of a released `Context` now raises `moderngl.Error`.
+- Fix use-after-free when calling methods of a released `VertexArray` or `Scope` after its program, index buffer or framebuffers were released and freed.
+- Fix memory leaks in `Context.scope` (the samplers and the arrays of bindings were never freed).
+- Add `Query.release()`. The OpenGL query objects of a `Query` were never deleted.
+- Fix external textures (and external buffers, once they are flagged as external) never being freed: `release()` now only gives up the references the object holds, it does not delete the OpenGL object.
+- Fix memory leaks when a call fails: the argument parsers (viewports, scissors, color masks, filters, bindings, blend functions), `Context.framebuffer`, `Context.empty_framebuffer`, `Context.program`, `Context.vertex_array`, `Context.scope`, `Context.buffer` and the texture constructors, `Buffer.read_chunks_into`, `Buffer.clear`, and `create_context` leaked references, Python objects, the half built object and OpenGL objects.
+- Fix memory leaks on success: `Context.program` (the varyings), `Context.vertex_array` (the attributes), `create_context` (the names of the extensions and the address of every OpenGL function, a few hundred objects per context).
+
+## [5.13.0](https://github.com/moderngl/moderngl/compare/5.10.0...5.13.0)
+
+- to be added later
 
 ## [5.10.0](https://github.com/moderngl/moderngl/compare/5.9.0...5.10.0)
 
